@@ -97,10 +97,17 @@ class GrokBotCommands(commands.Cog):
     import discord
 
     #Build the response message
-    myArgMsg =  "Received: {}\rParsed as: ?{}{}\r".format(ctx.message.content.splitlines()[0], ctx.command, await self.parsedArgs(ctx))
+    myArgMsgLineOne =  "Received: {}\r".format(ctx.message.content.splitlines()[0])
+    myArgMsgLineTwo =  "Parsed as: ?{}{}\r".format(ctx.command, await self.parsedArgs(ctx))
+    myArgMsg = myArgMsgLineOne + myArgMsgLineTwo
 
     #Build an @mention to be used in non-DM channels
     msgWithMention = myArgMsg + "Response sent as DM to {}".format(ctx.message.author.mention)
+
+    #Send to console the command and author
+    print(ctx.message.author)
+    print(myArgMsgLineOne)
+    print(myArgMsgLineTwo)
 
     #Check if we're in a DM channel
     if isinstance(ctx.channel, discord.DMChannel):
@@ -209,7 +216,7 @@ class GrokBotCommands(commands.Cog):
     if self.isCommandSpam(ctx, numSec):
       myMsg = "Come on {}, lets give more than {} seconds between commands".format(ctx.message.author.mention, numSec)
       await ctx.channel.send(myMsg)
-    elif repDB.getEQGuildName(ctx) is None:
+    elif await repDB.getEQGuildName(ctx) is None:
       #Do nothing
       pass
     else:
@@ -243,7 +250,7 @@ class GrokBotCommands(commands.Cog):
                     #Check to see if this is the encounter we're looking for
                     if pEncounter.lower() in aFlag.lower() and not "ZoneInto" in aFlag:
                       #Create output string            
-                      myCharName = myDump[aChar]["Name"]
+                      myCharName = aChar
                       myPlayer = myDump[aChar]["PublicNote"]
                       myClass = myDump[aChar]["Class"]
                       myLevel = myDump[aChar]["Level"]
@@ -374,6 +381,7 @@ class GrokBotCommands(commands.Cog):
   @commands.command(name='flag', help='Queries Magelo for up to 3 characters and displays flag information for them')
   async def botCommand_flag(self, ctx, parmPlayerOne: typing.Optional[str] = None, parmPlayerTwo: typing.Optional[str] = None, parmPlayerThree: typing.Optional[str] = None):
     #Check if command too spammy
+
     numSec = 7
     if self.isCommandSpam(ctx, numSec):
       myMsg = "Come on {}, lets give more than {} seconds between commands".format(ctx.message.author.mention, numSec)
