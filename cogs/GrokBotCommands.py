@@ -495,8 +495,6 @@ class GrokBotCommands(commands.Cog):
       myMsg = "Undefined message"
       #Start the ... typing for the bot in the channel
       async with ctx.channel.typing():
-        #Echo command 
-        await self.echoCommand(ctx)
 
         #Build list of approved people to upload
         lstApproved = []
@@ -513,6 +511,8 @@ class GrokBotCommands(commands.Cog):
             myMsg = "No attachment"
             print(myMsg)
           else:
+            print("There is at least one attachment, try to parse it ")
+
             #process only the first attachment with processAttachment
             myGuildDump = await processGuildDump(ctx.message.attachments[0])
             
@@ -580,40 +580,196 @@ class GrokBotCommands(commands.Cog):
 
               print("Finished for loop of each character, send msg")
               myMsg = "Successly uploaded!\r\rToDo\r1) Change this is a DM?\r"
-              
-        await ctx.send(myMsg)
 
-async def processGuildDump(pAttachment):
-  #Set dumpFileName
-  #example: Spirit of Potato-20201121-183443.txt)
-  dumpFileName = pAttachment.filename.replace('.txt', '')
+        #Echo command 
+        await self.echoCommand(ctx)
+        
+        #Send DM to author
+        await ctx.message.author.send(myMsg)        
 
-  splitDumpFileName = dumpFileName.split('-')
-  if len(splitDumpFileName) == 3:
-    #Create dictionary to contain meta data from filename
-    dumpMeta = {"Guild" : splitDumpFileName[0], "Date" : splitDumpFileName[1], "Time" : splitDumpFileName[2]}
-  else:
-    print("Filename not valid:  ".format(pAttachment.filename))
-    return None
+  async def processGuildDump(pAttachment):
+    #Set dumpFileName
+    #example: Spirit of Potato-20201121-183443.txt)
+    dumpFileName = pAttachment.filename.replace('.txt', '')
 
-  #Read context of text file
-  attachment_contents = await pAttachment.read()  
+    splitDumpFileName = dumpFileName.split('-')
+    if len(splitDumpFileName) == 3:
+      #Create dictionary to contain meta data from filename
+      dumpMeta = {"Guild" : splitDumpFileName[0], "Date" : splitDumpFileName[1], "Time" : splitDumpFileName[2]}
+    else:
+      print("Filename not valid:  ".format(pAttachment.filename))
+      return None
 
-  #Clean up the data that discord adds
-  dumpData = str(attachment_contents)
-  dumpData = dumpData[2:]  #Remove left two characters (b')
-  dumpData = dumpData[:-1]  #remove the final character (')
+    print("Attempting to read contents")
+    #Read context of text file
+    attachment_contents = await pAttachment.read()  
+    print("Contents read")
 
-  #Filename appears good, likely valid try to parse it with Everquest class
-  from classes.Everquest import Everquest
-  EQ = Everquest()
-  dictGuildDump = {"Metadata" : dumpMeta}
-  dictGuildDump["Data"] = await EQ.parseGuildDump(dumpData)
+    #Clean up the data that discord adds
+    dumpData = str(attachment_contents)
+    dumpData = dumpData[2:]  #Remove left two characters (b')
+    dumpData = dumpData[:-1]  #remove the final character (')
 
-  if dictGuildDump["Data"] is None:
-    print("Error processing guild dump:  " + pAttachment.filename)
-  else:
-    #Guild dump parsed successfully, return it
-    return dictGuildDump
+    #Filename appears good, likely valid try to parse it with Everquest class
+    from classes.Everquest import Everquest
+    EQ = Everquest()
+    dictGuildDump = {"Metadata" : dumpMeta}
+    dictGuildDump["Data"] = await EQ.parseGuildDump(dumpData)
+
+    if dictGuildDump["Data"] is None:
+      print("Error processing guild dump:  " + pAttachment.filename)
+    else:
+      #Guild dump parsed successfully, return it
+      return dictGuildDump
+
+  @commands.command(name='ch', help='Creates Ch chain from raid dump')
+  async def commandCH(self, ctx, pLength: typing.Optional[int] = 0, *args):
+
+    #Check if command too spammy
+    numSec = 7
+    if self.isCommandSpam(ctx, numSec):
+      myMsg = "Come on {}, lets give more than {} seconds between commands".format(ctx.message.author.mention, numSec)
+      await ctx.channel.send(myMsg)
+    else:
+      myMsg = "Undefined message"
+      #Start the ... typing for the bot in the channel
+      async with ctx.channel.typing():
+        #Check if there is at least one attachment
+        if not ctx.message.attachments:
+          myMsg = "No attachment"
+          print(myMsg)
+        else:  
+          #Read context of text file
+          attachment_contents = await ctx.message.attachments[0].read()  
+
+          #Clean up the data that discord adds
+          dumpData = str(attachment_contents)
+          dumpData = dumpData[2:]  #Remove left two characters (b')
+          dumpData = dumpData[:-1]  #remove the final character (')
+
+          #Try to parse it with Everquest class
+          from classes.Everquest import Everquest
+          EQ = Everquest()    
+          dictGuildDump = await EQ.parseRaidDump(dumpData)
+
+          if dictGuildDump is None:
+            print("Error processing raid dump")
+          else:
+            #set dumpClerics with list of 65 clerics from the raid dump
+            dumpClerics = []
+            for aChar in dictGuildDump:
+              myClass = dictGuildDump[aChar]['Class']
+              myLevel = int(dictGuildDump[aChar]['Level'])
+              if myClass == 'Cleric' and myLevel == 65:
+                dumpClerics.append(aChar)
+            
+            #Preserve raw dump of 65 clerics in the raid
+            rawDumpClerics = dumpClerics.copy()
+            
+            #Remove any clerics that are to be excluded
+            for i, aCleric in enumerate(dumpClerics):
+              if aCleric in args:
+                dumpClerics.pop(i)               
+            
+            #Check if the length of the CH chain has to be calculated
+            if pLength == 0:
+              #Set the length to the number of non-excluded clerics available
+              pLength = len(dumpClerics)
+
+            #Check if there aren't enough clerics given the requested length
+            if len(dumpClerics) < pLength:
+              myMsg = "Requested {} only {} non-excluded clerics".format(pLength, len(dumpClerics))
+              print(myMsg)
+            else:
+              #Create array of the proper size, each value will be None
+              myCH = [None] * pLength
+
+              #Define Cleric to clump together
+              clericClump = []
+              clericClump.append(["Rezzes", "Aledrin"])
+              clericClump.append(["Yvonnel","Froaki","Giblet"])
+              clericClump.append(["Scarto", "Statler", "Waldorf"])
+
+              #Define clerics prefer at the start of the chain
+              #clericStart = ["Rezzes"]
+
+              #Loop through all clerics in 'clericStart'
+              #for aCleric in clericStart:
+                #Check to see if this cleric is in the raid
+              #  if aCleric in dumpClerics:
+              #    await self.addCleric(aCleric, clericClump, dumpClerics, myCH)
+
+              #Loop through all clerics in 'clericClump'
+              for aSet in clericClump:
+                #Loop through clerics in this set
+                for aCleric in aSet:
+                  #Check to see if this cleric is in the raid
+                  if aCleric in dumpClerics:
+                    await self.addCleric(aCleric, clericClump, dumpClerics, myCH)
+
+              #Loop through the rest of the clerics in dumpClerics
+              for aCleric in sorted(dumpClerics):
+                await self.addCleric(aCleric, clericClump, dumpClerics, myCH)
+
+              #Create a message from myCH:
+              myMsg = "Cleric Chain:  "
+              for i, aCleric in enumerate(myCH, 1):
+                #Build translation for 10+ clerics in the chain
+                myTranslate = {10:"A",11:"B",12:"C",13:"D",14:"E",15:"F",16:"G"}
+
+                #Set myNum with translation
+                if i in myTranslate:
+                  myNum = myTranslate[i]
+                else:
+                  myNum = str(i)
+
+                #Add this cleric with their number to the chain message
+                myMsg += "{}) {} ".format(myNum, aCleric)
+
+              #List clerics in the raid that are out of the chain
+              myMsg += "\rNot in chain: "
+              for aCleric in rawDumpClerics:
+                if not aCleric in myCH:
+                  myMsg += " {} ".format(aCleric)
+              print(myCH)
+              print(myMsg)
+
+      #Echo command 
+      await self.echoCommand(ctx)
+
+      #Send DM to author
+      await ctx.message.author.send(myMsg)        
+
+
+  async def addCleric(self, pCleric, pClump, pDump, pCH):    
+    #Iterate throuch each clump clerics
+    for aClump in pClump:
+      #Check if our cleric is in this clump
+      if pCleric in aClump:
+        #Iterate through each cleric in the clump
+        for aCleric in aClump:
+          #Check if this cleric is in the pDump and not in pCH already
+          if aCleric in pDump and not aCleric in pCH:
+            #Iterate through pCH to look for the first open spot
+            for i, aSpot in enumerate(pCH):
+              #Check to see if this spot is none
+              if aSpot is None:
+                #Add this cleric to this spot
+                pCH[i] = aCleric
+
+                #break out of for loop
+                break
+    
+    #Check to see if the cleric is not already in pCH
+    if not pCleric in pCH:
+      #Add the cleric to the first available slot
+      for i, aSpot in enumerate(pCH):
+        #Check to see if this spot is none
+        if aSpot is None:
+          #Add this cleric to this spot
+          pCH[i] = pCleric
+
+          #break out of for loop
+          break
 
 
