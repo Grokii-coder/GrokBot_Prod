@@ -1,16 +1,17 @@
 import os
 import keep_alive
-#import discord
+import discord
 #import typing
 
 from discord.ext import commands 
 
-
+intents = discord.Intents.default()
+intents.members = True
 
 #URL for server admins to add the bot:
 #https://discordapp.com/oauth2/authorize?client_id=778661268939735060&scope=bot
 
-client = commands.Bot(command_prefix = '?')
+client = commands.Bot(command_prefix = '?', intents=intents)
 
 @client.event 
 async def on_ready():
