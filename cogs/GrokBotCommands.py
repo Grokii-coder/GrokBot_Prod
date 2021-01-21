@@ -1242,7 +1242,7 @@ class GrokBotCommands(commands.Cog):
     #await ctx.message.author.send(myMsg)
     await self.largeDM(ctx, myMsg)
 
-  @commands.command(name='aa', help='Looks up prerequisites for a PoP flag')
+  @commands.command(name='aa', help="Compares two character's AAs")
   #async def botCommand_test(self, ctx, parmDays: typing.Optional[int] = 30, parmPlayer: typing.Optional[str] = None):
   async def botCommand_aa(self, ctx, pLeft: typing.Optional[str] = None, pRight: typing.Optional[str] = None):
     #Check if command too spammy

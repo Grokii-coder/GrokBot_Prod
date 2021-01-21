@@ -23,10 +23,10 @@ class GrokBotBidding(commands.Cog):
     if message.author != self.bot.user:
       
       #Echo message and channel id
-      myMsg = "New message in channel ({}) with ID ({})".format(message.channel.name, message.channel.id)
+      myMsg = "{} ({}:{})".format(message.content, message.channel.name, message.channel.id, )
       #echo message
       print(myMsg)
-      print(message.content)
+      #print(message.content)
 
       #Check if the message was made to 'in-game-chat' channel id 690269605524013127
       if message.channel.id == 690269605524013127:
@@ -35,8 +35,8 @@ class GrokBotBidding(commands.Cog):
         result = re.search(pattern, message.content)
         myGuildMate = result.group(1)
         myMessage = result.group(2)
-        print(myGuildMate)
-        print(myMessage)
+        #print(myGuildMate)
+        #print(myMessage)
 
         #Split message by space
         arrMsg = myMessage.split()
