@@ -83,57 +83,44 @@ class WFH_Magelo:
     "Rathe Council":{"Text":"You have defeated the Rathe Council within Plane of Earth B","Requirement":["Arbitor"]},
     "ZoneInto PoTime":{"Text":"Zoned Into - Plane of Time","Requirement":["FenninRo", "Xegony", "Coirnav", "Rathe Council"]}}
 
-  #Recurisve function flagPoPFlag_PreReq
-  async def flagPoPFlag_PreReq(self, paramFlag, paramLong, paramIndent):
+  async def flagPoPFlag_PreReq(self, paramFlag):
     #Create output dictionary
     myOutput = ""
-
-    #Set parameters
-    myEmoji = ":call_me:"
-    maxComplex = 3
-    myIndent = ""
-    for x in range(int(paramIndent)):
-      myIndent += "  "
 
     #Loop through flags and see if flag exists, fixing case sensitivty
     inList = 0
     for aflag in self.popFlag:
       if aflag.lower() == paramFlag.lower():
         inList = 1
-        paramFlag = aflag
+        baseFlagShort = aflag
+        baseFlagLong = self.popFlag[aflag]["Text"]
 
-    #Check to see if paramIndent is at max complexity:
-    if int(paramIndent) <= maxComplex:
-      #Check to see if flag in list
-      if inList == 1:
-        #Check if this is the first call
-        if int(paramIndent) == 0:
-          #First call, print out header with short flag name
-          myOutput = "Requirements for {}\r".format(paramFlag)
-        #Check if long text chosen
-        elif paramLong == 1:
-          #Long chosen, add it
-          myOutput += myIndent + myEmoji + self.popFlag[paramFlag]["Text"] + "\r"
-        else:
-          #Short chosen, add it
-          myOutput += myIndent + myEmoji + paramFlag + "\r"
+    #Check to see if flag in list
+    if inList == 1:
+      #First call, print out header with short flag name
+      myOutput = "Short Name: {}\rMagelo: {}\r\rPreRequirements:\r".format(baseFlagShort, baseFlagLong)
 
-        #Flag in list, check to see if it has any requirements
-        if len(self.popFlag[paramFlag]["Requirement"]) > 0:
-          #Iterate through each flag and call this recursively
-          for aPreReq in self.popFlag[paramFlag]["Requirement"]:
-            #myPreFlag = await self.flagPoPFlag_Decode(aPreReq, paramLong, paramIndent + "  ")
-            #myOutput += myPreFlag
 
-            myOutput += await self.flagPoPFlag_PreReq(aPreReq, paramLong, int(paramIndent) + 1)
+      #Flag in list, check to see if it has any requirements
+      myReq = ""
+      if len(self.popFlag[baseFlagShort]["Requirement"]) > 0:
+        #Iterate through each flag and call this recursively
+        for aPreReq in self.popFlag[baseFlagShort]["Requirement"]:
+          myShort = aPreReq
+          myLong = self.popFlag[aPreReq]["Text"]
+          print("{}: {}".format(myShort, myLong))
+          myReq += "{}: {}\r".format(myShort, myLong)
       else:
         #Flag doesn't exist, something wrong with my dictionary, debug it
-        print("flagPoPFlag_Decode shouldn't happen {}  {}  {}".format(paramFlag, paramLong, paramIndent))          
+        print("flagPoPFlag_Decode shouldn't happen {}".format(paramFlag))     
     else:
-      #Too much complexity, return nothing
-      myOutput = ""
-      #print("Ignored ({}) because paramIndent ({})".format(paramFlag, paramIndent))
+      #Flag not in list, return none
+      myOutput = None
     
+    if myOutput is None:
+      myOutput = "No flags by that name, try using ?flag to get a short flag name"
+    else:
+      myOutput += myReq
     return myOutput
 
   async def getURL(self, paramPage, paramItem, forAPI):

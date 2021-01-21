@@ -17,6 +17,7 @@ def setup(paramBot):
 class GrokBotCommands(commands.Cog):
   def __init__(self, paramBot):
     self.bot = paramBot
+    self.badList = ["penis", 'richard', 'dick']
     self.history = {}
     self.help = {}
     self.help["needs"] = {"Scope" : "Guild"}
@@ -52,6 +53,20 @@ class GrokBotCommands(commands.Cog):
     self.help["flag"]["Text"] = helpText
 
   
+  async def badword(self, plist): 
+    check = False
+
+    # Iterate self.badList 
+    for m in self.badList: 
+
+      # Iterate pList 
+      for n in plist: 
+
+        # if there is a match
+        if m.lower() in n.lower(): 
+            check = True
+                
+    return check 
 
   async def largeDM(self, ctx, paramMsg):
     #Setup variable to hold message under 2000 characters
@@ -184,16 +199,18 @@ class GrokBotCommands(commands.Cog):
         self.history[myAuthor][myServer][myCmd][myCreatedAt] = myFullCmd
     return 0   
 
-#Add command for WFH.flagPoPFlag_PreReq
-
-  @commands.command(name='prereq', help='Looks up prerequisites for a PoP flag')
+  @commands.command(name='prereq', aliases=['Prereq', 'prereqs', 'Prereqs'], help='Looks up prerequisites for a PoP flag')
   #async def botCommand_test(self, ctx, parmDays: typing.Optional[int] = 30, parmPlayer: typing.Optional[str] = None):
-  async def botCommand_test(self, ctx, pFlag: typing.Optional[str]):
+  async def botCommand_test(self, ctx, *args):
+
     #Check if command too spammy
     numSec = 7
     if self.isCommandSpam(ctx, numSec):
       myMsg = "Come on {}, lets give more than {} seconds between commands".format(ctx.message.author.mention, numSec)
       await ctx.channel.send(myMsg)
+    #elif self.badword(args):
+    #  myMsg = "I'm not responding to prophane arguments, are you in Unity or something?"
+    #  await ctx.channel.send(myMsg)
     else:
       #Start the ... typing for the bot in the channel
       async with ctx.channel.typing():
@@ -203,13 +220,13 @@ class GrokBotCommands(commands.Cog):
         #Get data from WFH_Magelo class
         from classes.WFH_Magelo import WFH_Magelo
         WFH = WFH_Magelo()
-        myOutput = await WFH.flagPoPFlag_PreReq(pFlag, 1, 1)
+        myOutput = await WFH.flagPoPFlag_PreReq(' '.join(args))
 
         if not len(myOutput) > 0:
-          myOutput = "No flags by that name, try using !flag to get a short flag name"
+          myOutput = "No flags by that name, try using ?flag to get a short flag name"
 
         #Send DM to author
-        await ctx.message.author.send(myOutput)        
+        await ctx.message.author.send(myOutput)      
 
   @commands.command(name='needs', help='Reviews recent guild dump and lists players/characters that need a PoP flagging encounter')
   #async def botCommand_test(self, ctx, parmDays: typing.Optional[int] = 30, parmPlayer: typing.Optional[str] = None):
@@ -385,10 +402,9 @@ class GrokBotCommands(commands.Cog):
         #Send DM to author
         await ctx.message.author.send(myOutput)        
 
-  @commands.command(name='flag', help='Queries Magelo for up to 3 characters and displays flag information for them')
+  @commands.command(name='flag', aliases=['Flag', 'Flags', 'flags'], help='Queries Magelo for up to 3 characters and displays flag information for them')
   async def botCommand_flag(self, ctx, parmPlayerOne: typing.Optional[str] = None, parmPlayerTwo: typing.Optional[str] = None, parmPlayerThree: typing.Optional[str] = None):
     #Check if command too spammy
-
     numSec = 7
     if self.isCommandSpam(ctx, numSec):
       myMsg = "Come on {}, lets give more than {} seconds between commands".format(ctx.message.author.mention, numSec)
@@ -396,6 +412,9 @@ class GrokBotCommands(commands.Cog):
     #Check if help was requested
     if str(parmPlayerOne).lower() == 'help':
       await ctx.channel.send(self.help["flag"]["Text"])
+    #elif self.badword([parmPlayerOne, parmPlayerTwo, parmPlayerThree]):
+    #  myMsg = "I'm not responding to prophane arguments, are you in Unity or something?"
+    #  await ctx.channel.send(myMsg)      
     else:
       #Start the ... typing for the bot in the channel
       async with ctx.channel.typing():
@@ -492,7 +511,7 @@ class GrokBotCommands(commands.Cog):
 
   @commands.command(name='upload', help='Uploads v3 guild dump to database')
   async def uploadGuildDump(self, ctx, pDays: typing.Optional[int] = 0):
-
+    print("Command Upload received")
     #Check if command too spammy
     numSec = 7
     if self.isCommandSpam(ctx, numSec):
@@ -557,8 +576,8 @@ class GrokBotCommands(commands.Cog):
                   #Get Magelo data for this character
                   dictChar = await WFH.getBasicData(aChar)
                   await WFH.getKeyData(aChar, dictChar)
-                  await WFH.getAAData(aChar, dictChar)
-                  await WFH.getSkillData(aChar, dictChar)
+                  #await WFH.getAAData(aChar, dictChar)
+                  #await WFH.getSkillData(aChar, dictChar)
 
                   #Add guild dump data to dictChar (overwrite level/class because /roleplaying and /anon)
                   dictChar["Level"] = myGuildDump["Data"][aChar]["Level"]
@@ -922,6 +941,7 @@ class GrokBotCommands(commands.Cog):
 
   @commands.command(name='who', help="Looks up characters by discord name or public note")  
   async def botCommand_who(self, ctx, pName=""):
+    print("entering who") 
     #Get data from replitDB
     from classes.replitDB import replitDB
     repDB = replitDB()
@@ -959,7 +979,7 @@ class GrokBotCommands(commands.Cog):
         #Match found in link object, output it        
         myMsg = []
         print(myMember.nick)
-        await self.outputwhoFlag(myMember.name, myMember.nick, myPublicNote, newestDump, myMsg)
+        await self.outputwhoFlag(myMember.mention, myMember, myMember.nick, myPublicNote, newestDump, myMsg)
         myMsg = myMsg[0]
       else:
         #Search for character in guild dump
@@ -986,19 +1006,22 @@ class GrokBotCommands(commands.Cog):
           #Check if match found in links
           if myMember is None:
             myMsg = []
-            await self.outputwhoFlag("<<Need to link>>", None, myPublicNote, newestDump, myMsg)
+            await self.outputwhoFlag(None, None, None, myPublicNote, newestDump, myMsg)
             myMsg = myMsg[0]
           else:
             myMsg = []
-            await self.outputwhoFlag(myMember.name, myMember.nick, myPublicNote, newestDump, myMsg)
+
+            await self.outputwhoFlag(myMember.mention, myMember, myMember.nick, myPublicNote, newestDump, myMsg)
+            
             myMsg = myMsg[0]
 
     #Echo command and send message
     #await self.echoCommand(ctx)
     await ctx.send(myMsg)
 
-  async def outputwho(self, pName, pNick, pPublicNote, pDump, pMsg):
-    #Check to see if myPublicNote is in pDump    
+  async def outputwho(self, pMention, pName, pNick, pPublicNote, pDump, pMsg):
+    #Check to see if myPublicNote is in pDump   
+    print("entering ouutputwho") 
     myMsg = ""    
     for aChar in sorted(pDump["Data"]):
       if pDump["Data"][aChar]["PublicNote"].lower() == pPublicNote.lower():
@@ -1009,7 +1032,7 @@ class GrokBotCommands(commands.Cog):
 
     #Check if there is a nickname
     if pNick is None:
-      myHeader = "Discord name {}\r\r".format(pName)
+      myHeader = "Discord name {}\r\r".format(pName)      
     else:
       myHeader = "Discord name {}\rDiscord nickname {}\r\r".format(pName, pNick)  
     
@@ -1044,7 +1067,7 @@ class GrokBotCommands(commands.Cog):
 
     pMsg.append(myMsg)
 
-  async def outputwhoFlag(self, pName, pNick, pPublicNote, pDump, pMsg):
+  async def outputwhoFlag(self, pMention, pName, pNick, pPublicNote, pDump, pMsg):
     #Check to see if myPublicNote is in pDump
     myTotal = 0
     myMsg = ""    
@@ -1052,7 +1075,11 @@ class GrokBotCommands(commands.Cog):
       if pDump["Data"][aChar]["PublicNote"].lower() == pPublicNote.lower():
         myLevel = pDump["Data"][aChar]["Level"]
         myClass = pDump["Data"][aChar]["Class"]
-        myStatus = pDump["Data"][aChar]["ProgressionStatus"]
+
+        if "ProgressionStatus" in pDump["Data"][aChar]:
+          myStatus = pDump["Data"][aChar]["ProgressionStatus"]
+        else:
+          myStatus = pDump["Data"][aChar]["MageloStatus"]
         
         if myStatus == 'TimeFlagged':
           myTotal = myTotal + 1
@@ -1060,10 +1087,12 @@ class GrokBotCommands(commands.Cog):
         myMsg += "{} ({}):  {} {}\r".format(aChar, myStatus, myLevel, myClass)
 
     #Check if there is a nickname
-    if pNick is None:
-      myHeader = "Discord name {} ({})\r\r".format(pName, myTotal)
+    if pName is None:
+      myHeader = "Discord name {} ({} time flagged)\r\r".format("<<Need to link>>", myTotal)
+    elif pNick is None:
+      myHeader = "Discord name {} ({} time flagged)\r\r".format(pMention, myTotal, pNick)  
     else:
-      myHeader = "Discord name {} ({})\rDiscord nickname {}\r\r".format(pName, myTotal, pNick)  
+      myHeader = "Discord name {} ({} time flagged)\rDiscord without nickname {}\r\r".format(pMention, myTotal, pName)  
     
     myMsg = myHeader + myMsg
 
@@ -1212,3 +1241,28 @@ class GrokBotCommands(commands.Cog):
 
     #await ctx.message.author.send(myMsg)
     await self.largeDM(ctx, myMsg)
+
+  @commands.command(name='aa', help='Looks up prerequisites for a PoP flag')
+  #async def botCommand_test(self, ctx, parmDays: typing.Optional[int] = 30, parmPlayer: typing.Optional[str] = None):
+  async def botCommand_aa(self, ctx, pLeft: typing.Optional[str] = None, pRight: typing.Optional[str] = None):
+    #Check if command too spammy
+    numSec = 7
+    if self.isCommandSpam(ctx, numSec):
+      myMsg = "Come on {}, lets give more than {} seconds between commands".format(ctx.message.author.mention, numSec)
+      await ctx.channel.send(myMsg)
+    else:
+      await self.echoCommand(ctx)
+
+      myMsg = ""
+      #Check to see if pLeft and pRight have data
+      if not pLeft is None:
+        from GrokBotClasses.GrokBot_aa import GrokBot_aa
+        GrokBot_aa = GrokBot_aa(pLeft, pRight)
+        myMsg = await GrokBot_aa.Output()
+      else:
+        #Atleast one of pLeft and pRight are None
+        myMsg = "Need two valid characters as arguments"
+      
+
+      #Send DM to author
+      await ctx.message.author.send(myMsg)  
