@@ -65,7 +65,7 @@ class GrokBotBidding(commands.Cog):
               #Check to see if an item is open
               if self.auction == None:            
                 #Open bidding for this item
-                await self.parseOpen(myGuildMate)
+                await self.parseOpen(myGuildMate, message.created_at)
 
             else:
               myMsg = "Couldn't parse any items from !loot command\r{}".format(myMessage)
@@ -79,15 +79,57 @@ class GrokBotBidding(commands.Cog):
               print("Entered cancel")
               #Build message to send to channel
               myMsg = "Auction for {} cancelled by {}".format(self.auction["ItemName"], myGuildMate)
-              print(myMsg)
+              
               #Send to channel:
               await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)   
               #Cancel the auction
               self.auction = None
-          elif myCommand == "!close":
+          elif myCommand == "!rollback":
             if self.auction == None:
-              myMsg = "No active auction, cannel cancel it"
+              myMsg = "No active auction, cannot roll it back"
               await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds) 
+            else:
+              #Check if there are no bids
+              if(len(self.auction["TopBids"]) == 0):
+                #Cannot roll back, build message
+                myMsg = "Rollback by {}, Cannot rollback, currently no bids".format(myGuildMate)              
+              #Check if there is only one bid in history
+              elif(len(self.auction["History"]) == 1):
+                #Only one item in history, clear current bid and history
+                self.auction["History"].pop()
+                self.auction["TopBids"].pop()
+
+                #Build message
+                myMsg = "Rollback by {}\r{}: No bids, currently rotting".format(myGuildMate, self.auction["ItemName"])
+              else:
+                #Remove last bid from the history
+                self.auction["History"].pop()
+                #Get last good bid
+                lastGood = self.auction["History"].pop()
+
+                #Set last good bid to TopBids and back into History
+                self.auction["TopBids"] = lastGood
+                self.auction["History"].append(lastGood)
+
+                #Get list of current top bidders  
+                myList = await self.echoTopBids()
+
+                #Build message to send to channel
+                myMsg = "Rollback by {}\r{}: {}".format(myGuildMate, self.auction["ItemName"], myList)
+              
+              #Send the message built to the channel:
+              await self.msgToChannel(781591411094454273, myMsg, message.created_at) 
+
+          elif myCommand == "!close":            
+            #Calculate the time since last bid
+            secSinceLastBid = abs(message.created_at - self.LastBid).seconds
+            
+            if self.auction == None:
+              myMsg = "{} tried to !close.  No active auction, cannot close it".format(myGuildMate)
+              await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+            elif secSinceLastBid <= 10:              
+              myMsg = "{} tried to !close.  Less than 10 seconds since last bid, cannot close it".format(myGuildMate)
+              await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
             else:
               #Write auction to the db
                 #Need to have a raid start command to get date of raid
@@ -114,11 +156,28 @@ class GrokBotBidding(commands.Cog):
               #Check to see if there are new items to queue
               if len(self.queuedItems) > 0:
                 #Open a new item
-                await self.parseOpen(myGuildMate)
+                await self.parseOpen(myGuildMate, message.created_at)
 
         #Check to see if this is a bid
         elif len(arrMsg) == 1 and arrMsg[0].isdigit():
-          await self.parseBid(myGuildMate, myMessage, int(arrMsg[0]))
+          await self.parseBid(myGuildMate, myMessage, int(arrMsg[0]), message.created_at)
+
+  async def echoBidDone(self, pMyDateTime, pMsg):
+    import asyncio
+
+    #Wait for 30 seconds        
+    await asyncio.sleep(30)
+    
+    #See if this bid is still the top bid
+    if pMyDateTime == self.LastBid:
+      #It is the top bid, send message
+      myMsg = "Closing soon:  {}".format(pMsg)
+      #print(myMsg)
+      await self.msgToChannel(781591411094454273, myMsg)      
+    else:
+      print("Newer bid, do nothing")
+    
+    
 
   #Send a message to a specific channel
   #grok-bot-spam is 781591411094454273
@@ -147,10 +206,15 @@ class GrokBotBidding(commands.Cog):
 
     return myOutput
 
+  async def addBid(self, pBid, pLastBidCreatedAt):
+    #Update the new topbid       
+    self.auction["TopBids"].append(pBid)
+    
+    #Update history with a copy of the current state of topbid
+    self.auction["History"].append(self.auction["TopBids"].copy())
 
-  async def parseBid(self, pGuildMate, pGuildMessage, pBid):
+  async def parseBid(self, pGuildMate, pGuildMessage, pBid, pLastBidCreatedAt):
     print("parseBid started")
-    print(pGuildMessage)
     #Check if self.auction is ready to run an auction
     if self.auction is None:
       myMsg = "Auction not running, do nothing"
@@ -159,8 +223,7 @@ class GrokBotBidding(commands.Cog):
       #Check to see if number of bids is less than DutchIndex
       if len(self.auction["TopBids"]) < self.auction["DutchIndex"]:
           #No competition, Add bid to TopBids and History
-          self.auction["TopBids"].append([pGuildMate, pBid])
-          self.auction["History"].append([pGuildMate, pBid])
+          await self.addBid([pGuildMate, pBid], pLastBidCreatedAt)
           print("No competition, Add bid to TopBids and History")  
 
           #Get list of current top bidders  
@@ -168,7 +231,11 @@ class GrokBotBidding(commands.Cog):
           #Build message to send to channel
           myMsg = "{}: {}".format(self.auction["ItemName"], myList)
           #Send to channel:
-          await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)          
+          await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+
+          #Update the LastBid variable and start echo for bidding done
+          self.LastBid = pLastBidCreatedAt          
+          await self.echoBidDone(pLastBidCreatedAt, myMsg)        
       else:
         #Bids are full, see if this is higher than the lowest bid
 
@@ -196,8 +263,7 @@ class GrokBotBidding(commands.Cog):
           #print(self.auction["TopBids"])
           
           #Add bid to TopBids and History
-          self.auction["TopBids"].append([pGuildMate, pBid])
-          self.auction["History"].append([pGuildMate, pBid])
+          await self.addBid([pGuildMate, pBid], pLastBidCreatedAt)
 
           #Get list of current top bidders  
           myList = await self.echoTopBids()
@@ -205,6 +271,10 @@ class GrokBotBidding(commands.Cog):
           myMsg = "{}: {}".format(self.auction["ItemName"], myList)
           #Send to channel:
           await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+
+          #Update the LastBid variable and start echo for bidding done
+          self.LastBid = pLastBidCreatedAt          
+          await self.echoBidDone(pLastBidCreatedAt, myMsg)          
         else:   
           myMsg = "{} had a weak bid of {}, cannot add it".format(pGuildMate, pBid)
           await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
@@ -240,7 +310,7 @@ class GrokBotBidding(commands.Cog):
         #Enter the new item with count of 1
         self.queuedItems[anItem] = 1
 
-  async def parseOpen(self, pGuildMate):
+  async def parseOpen(self, pGuildMate, pLastBidCreatedAt):
     #Format:    !open OptInt URL (item name with spaces)
     #Examples:
     #!open 2 https://allaclone.wayfarershaven.com/?a=item&id=68199 (Timeless Coral Greatsword) 
@@ -271,9 +341,13 @@ class GrokBotBidding(commands.Cog):
         #Add dutch text to the end of the message
         myDutchMsg = " dutch x{}".format(self.auction["DutchIndex"])
         myMsg += myDutchMsg
-      
+
       #Send the message
       await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+
+      #Update the LastBid variable and start echo for bidding done
+      self.LastBid = pLastBidCreatedAt          
+      await self.echoBidDone(pLastBidCreatedAt, "No bids on {}".format(self.auction["ItemName"]))
     else:
       myMsg = "Auction already running for ({}), cannot start a new auction".format(self.auction["ItemName"])
       await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
