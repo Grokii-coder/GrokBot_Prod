@@ -39,8 +39,6 @@ class GrokBotBidding(commands.Cog):
         result = re.search(pattern, message.content)
         myGuildMate = result.group(1)
         myMessage = result.group(2)
-        #print(myGuildMate)
-        #print(myMessage)
 
         #Split message by space
         arrMsg = myMessage.split()
@@ -51,7 +49,17 @@ class GrokBotBidding(commands.Cog):
           myCommand = arrMsg[0].lower() 
           print("myCommand is ({})".format(myCommand))
 
-          #Check to see if the command is open
+          #Check to see if the command is voice
+          if myCommand == "!voice":
+            print(myCommand)
+            myGuild = message.guild
+            
+            for aChannel in myGuild.voice_channels:
+              print(aChannel.id, aChannel)
+              if aChannel.id == 650875260618407956:
+                await aChannel.connect()
+
+          #Check to see if the command is loot
           if myCommand == "!loot" and len(arrMsg) >= 3:
             #Get item name(s) to queue up
             arrLootItemList = []
