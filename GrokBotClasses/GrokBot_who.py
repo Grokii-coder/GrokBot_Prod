@@ -1,6 +1,8 @@
 class GrokBot_who():
   def __init__(self):
     self.Msg = ""
+    self.statDict = {}
+    
 
   async def getWho(self, ctx, pName):
     await self.processWho(ctx, pName)
@@ -8,7 +10,6 @@ class GrokBot_who():
       return(self.Msg)
     else:
       return("Empty Msg")
-
   async def processWho(self, ctx, pName):
     print("entering who") 
     print(pName)
@@ -149,6 +150,184 @@ class GrokBot_who():
 
     pMsg.append(myMsg)         
 
+
+  async def getRoleStatus(self, ctx):
+    print("Entering getRoleStatus...")
+
+    #Set statDict to a blank dictionary
+    self.statDict = {}
+
+    #Get data from most recent guild dump
+    await self.getGuildDumpData(ctx)
+
+    #Get data from link
+    await self.getLinkData(ctx)
+
+    #Get role data
+    await self.getRoleData(ctx)
+
+    #Build lists for output message
+    msgNoManagedRole = await self.getNoManagedRole()
+    msgUnlinkedPublicNote = await self.getUnlinkedPublicNote()
+    msgMultiManagedRole = await self.getMultiManagedRole()
+    msgNeedTater = await self.getNeedTater()
+    msgNeedTaterTot = await self.getNeedTaterTot()
+    msgNeedBakedPotato = await self.getNeedBakedPotato()
+    msgNeedLonePotato = await self.getNeedLonePotato()
+
+    myMsg = "{}\r\r{}".format(msgNoManagedRole, msgUnlinkedPublicNote)
+
+
+    for aNote in sorted(self.statDict):
+      print(aNote, self.statDict[aNote])
+    return(myMsg)
+
+  async def getNoManagedRole(self):
+    print("getNoManagedRole")
+    myOutput = "Discord member with no managed role (Tater, TaterTot, Baked Potato, or Lone Potato) listed:"
+    for aPublicNote in sorted(self.statDict):
+      if not self.statDict[aPublicNote]["Link"] is None:
+        if len(self.statDict[aPublicNote]["ManagedRole"]) == 0:
+          myOutput += "{}\r".format(aPublicNote)    
+    return myOutput
+  
+  async def getUnlinkedPublicNote(self):  
+    print("getUnlinkedPublicNote")
+    myOutput = "PublicNote not linked to a discord member "
+    for aPublicNote in sorted(self.statDict):
+      if self.statDict[aPublicNote] is None:
+        myOutput += "{}\r".format(aPublicNote)    
+    return myOutput
+
+
+  async def getMultiManagedRole(self):
+    print("getMultiManagedRole")
+  async def getNeedTater(self):
+    print("getNeedTater")
+  async def getNeedTaterTot(self):
+    print("getNeedTaterTot")
+  async def getNeedBakedPotato(self):
+    print("getNeedBakedPotato")
+  async def getNeedLonePotato(self):
+    print("getNeedLonePotato")
+
+
+
+
+  async def addPublicNote(self, pPublicNote):
+    self.statDict[pPublicNote] = {"ActiveCount" : 0, "TimeCount" : 0, "Link" : None, "ManagedRole" : []}
+
+  async def checkRole(self, pPublicNote, pRole, pRoleCheck):
+    if pRole.name == pRoleCheck:
+      #Add to ManagedRole array
+      #print("For {} add {}".format(pPublicNote, pRoleCheck))
+      self.statDict[pPublicNote]["ManagedRole"].append(pRoleCheck)
+
+  async def getRoleData(self, ctx):
+
+    #Create an arry of link IDs
+    myLinks = {}
+    for aPublicNote in sorted(self.statDict):
+      myLinks[self.statDict[aPublicNote]["Link"]] = aPublicNote
+
+    #Loop through IDs of current guild members
+    for aMember in ctx.guild.members:
+      #Check if this member is a bot
+      if aMember.bot:
+        #Bot, do nothing
+        pass
+      else:
+        #Set a default value for myPublicNote
+        myPublicNote = ""
+        
+        #Check to see if this id is in myLinks
+        if aMember.id in myLinks:
+          #ID is in myLinks, set myPublicNote
+          myPublicNote = myLinks[aMember.id]
+        else:
+          #ID is not in myLinks, set a public note using member name and add it 
+          myPublicNote = 'npn_{}'.format(aMember.name)
+          #Add with public note of NotLinked
+          await self.addPublicNote(myPublicNote)
+
+        #Loop through all roles
+        for aRole in aMember.roles:
+          #Taters - 737008516170121334
+          #TaterTots - 672226515236421662
+          #Lone Potato - 802749047601102860
+          #Baked Potato - 791641538110160927
+          await self.checkRole(myPublicNote, aRole, "Taters")
+          await self.checkRole(myPublicNote, aRole, "TaterTots")
+          await self.checkRole(myPublicNote, aRole, "Lone Potato")
+          await self.checkRole(myPublicNote, aRole, "Baked Potato")
+
+
+
+  async def getLinkData(self, ctx):
+    from classes.replitDB import replitDB
+    repDB = replitDB()
+    links = await repDB.getGuildProperty(ctx, "Links")
+
+    #Iterate through all the links
+    for aLink in links:
+      #Get public note
+      myPublicNote = aLink["PublicNote"] 
+
+      #Check to see if this public note is NOT already in self.statDict
+      if not myPublicNote in self.statDict:
+        #Add this public note
+        await self.addPublicNote(myPublicNote)
+      
+      #Set Link
+      self.statDict[myPublicNote]["Link"] = aLink["DiscordMemberID"]
+
+  async def getGuildDumpData(self, ctx):
+    from classes.replitDB import replitDB
+    repDB = replitDB()    
+    newestDump = await repDB.getGuildProperty(ctx, "NewestGuildDump")
+
+    for aChar in newestDump["Data"]:      
+      #Get public note
+      myPublicNote = newestDump["Data"][aChar]["PublicNote"]
+
+      #Check to see if this public note is NOT already in self.statDict
+      if not myPublicNote in self.statDict:
+        #Add this public note
+        await self.addPublicNote(myPublicNote)
+
+      #Get days since last logon
+      myDays = newestDump["Data"][aChar]["DaysSinceLastLogin"]
+
+      #Check if active in the last 90 days
+      if myDays <= 90:        
+        #It is, Increment active count of characters
+        myActiveCount = self.statDict[myPublicNote]["ActiveCount"]
+        self.statDict[myPublicNote]["ActiveCount"] = myActiveCount + 1
+      
+      #Get Time Flag status
+      if "ProgressionStatus" in newestDump["Data"][aChar]:
+        myStatus = newestDump["Data"][aChar]["ProgressionStatus"]
+      else:
+        myStatus = newestDump["Data"][aChar]["MageloStatus"]
+
+      #Check if time flagged
+      if myStatus == 'TimeFlagged':
+        #Increment active count of characters        
+        myTimeCount = self.statDict[myPublicNote]["TimeCount"]
+        self.statDict[myPublicNote]["TimeCount"] = myTimeCount + 1        
+
+
+
+
+
+
+
+
+
+
+
+
+
   async def getStats(self, ctx):
     #Get most recent guild dump and linked accounts from replitDB
     from classes.replitDB import replitDB
@@ -285,3 +464,5 @@ class GrokBot_who():
 
     #await ctx.message.author.send(myMsg)
     await self.largeDM(ctx, myMsg)
+
+

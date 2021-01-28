@@ -83,6 +83,14 @@ class WFH_Magelo:
     "Rathe Council":{"Text":"You have defeated the Rathe Council within Plane of Earth B","Requirement":["Arbitor"]},
     "ZoneInto PoTime":{"Text":"Zoned Into - Plane of Time","Requirement":["FenninRo", "Xegony", "Coirnav", "Rathe Council"]}}
 
+  async def flaglist(self):
+    myOutput = ""
+    for aFlag in self.popFlag:
+      myOutput += "{}: {}\r".format(aFlag, self.popFlag[aFlag]["Text"])
+    return myOutput
+
+
+
   async def flagPoPFlag_PreReq(self, paramFlag):
     #Create output dictionary
     myOutput = ""

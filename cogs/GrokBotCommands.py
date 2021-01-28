@@ -358,8 +358,11 @@ class GrokBotCommands(commands.Cog):
           myDumpDate = newestDump["MetaData"]["DateTime"]
           
           dicTally = {}
+          myDebugCount = 0
           #iterate through each character in the dump
           for aChar in myDump:
+            myDebugCount = myDebugCount + 1
+            print(myDebugCount, " ", aChar)
             #Check to see if player is blank or player matches public next
             myPublicNote = myDump[aChar]["PublicNote"]
             if pWho == "" or pWho.lower() == myPublicNote.lower():
@@ -510,7 +513,8 @@ class GrokBotCommands(commands.Cog):
           await ctx.message.author.send(myOutput)
 
   @commands.command(name='upload', help='Uploads v3 guild dump to database')
-  async def uploadGuildDump(self, ctx, pDays: typing.Optional[int] = 0):
+  @commands.has_role("leadership")
+  async def uploadGuildDump(self, ctx, pDays: typing.Optional[int] = 9999):
     print("Command Upload received")
     #Check if command too spammy
     numSec = 7
@@ -522,72 +526,64 @@ class GrokBotCommands(commands.Cog):
       #Start the ... typing for the bot in the channel
       async with ctx.channel.typing():
 
-        #Build list of approved people to upload
-        lstApproved = []
-        lstApproved.append('Grokii#6581')
-
         author = str(ctx.message.author)
 
-        if not author in lstApproved:
-          myMsg = "Not in approved list to upload"
+        #Check if there is at least one attachment
+        if not ctx.message.attachments:
+          myMsg = "No attachment"
           print(myMsg)
         else:
-          #Check if there is at least one attachment
-          if not ctx.message.attachments:
-            myMsg = "No attachment"
+          print("There is at least one attachment, try to parse it ")
+
+          #process only the first attachment with processAttachment
+          myGuildDump = await self.processGuildDump(ctx.message.attachments[0])
+          
+          #Set myDumpName to DATE-TIME from the meta data of the file attachment
+          myDumpName = "{}-{}".format(myGuildDump["Metadata"]["Date"], myGuildDump["Metadata"]["Time"])
+          print("Current Dump Name:  " + myDumpName)
+
+          #Get data from replitDB
+          from classes.replitDB import replitDB
+          repDB = replitDB()
+
+          #Wipe data for a guild
+          #await repDB.wipeGuild(ctx)
+          
+          newestGuildDump = await repDB.getGuildProperty(ctx, "NewestGuildDump")
+
+          #Check to make sure data was extracted from the file
+          if myGuildDump is None:
+            myMsg = "processAttachment unable to process file"
             print(myMsg)
+          #Check if guild dumps from the DB is None
+          elif newestGuildDump is None:
+            myMsg = "No guild dumps in DB, likely because tried upload from DM"
+            print(myMsg)            
+          #Query Magelo and write the data back to the database
           else:
-            print("There is at least one attachment, try to parse it ")
+            guildCharList = {}              
+            #Iterate through each character in the guild dump
+            for aChar in myGuildDump["Data"]:
+              if myGuildDump["Data"][aChar]["DaysSinceLastOn"] <= pDays:
+                #Setup WFH Magelo object
+                from classes.WFH_Magelo import WFH_Magelo
+                WFH = WFH_Magelo()
 
-            #process only the first attachment with processAttachment
-            myGuildDump = await self.processGuildDump(ctx.message.attachments[0])
-            
-            #Set myDumpName to DATE-TIME from the meta data of the file attachment
-            myDumpName = "{}-{}".format(myGuildDump["Metadata"]["Date"], myGuildDump["Metadata"]["Time"])
-            print("Current Dump Name:  " + myDumpName)
+                #Get Magelo data for this character
+                dictChar = await WFH.getBasicData(aChar)
+                await WFH.getKeyData(aChar, dictChar)
+                #await WFH.getAAData(aChar, dictChar)
+                #await WFH.getSkillData(aChar, dictChar)
 
-            #Get data from replitDB
-            from classes.replitDB import replitDB
-            repDB = replitDB()
+                #Add guild dump data to dictChar (overwrite level/class because /roleplaying and /anon)
+                dictChar["Level"] = myGuildDump["Data"][aChar]["Level"]
+                dictChar["Class"] = myGuildDump["Data"][aChar]["Class"]
+                dictChar["Rank"] = myGuildDump["Data"][aChar]["Rank"]
+                dictChar["DaysSinceLastLogin"] = myGuildDump["Data"][aChar]["DaysSinceLastOn"]
+                dictChar["PublicNote"] = myGuildDump["Data"][aChar]["PublicNote"]
 
-            #Wipe data for a guild
-            #await repDB.wipeGuild(ctx)
-            
-            newestGuildDump = await repDB.getGuildProperty(ctx, "NewestGuildDump")
-
-            #Check to make sure data was extracted from the file
-            if myGuildDump is None:
-              myMsg = "processAttachment unable to process file"
-              print(myMsg)
-            #Check if guild dumps from the DB is None
-            elif newestGuildDump is None:
-              myMsg = "No guild dumps in DB, likely because tried upload from DM"
-              print(myMsg)            
-            #Query Magelo and write the data back to the database
-            else:
-              guildCharList = {}              
-              #Iterate through each character in the guild dump
-              for aChar in myGuildDump["Data"]:
-                if myGuildDump["Data"][aChar]["DaysSinceLastOn"] <= pDays:
-                  #Setup WFH Magelo object
-                  from classes.WFH_Magelo import WFH_Magelo
-                  WFH = WFH_Magelo()
-
-                  #Get Magelo data for this character
-                  dictChar = await WFH.getBasicData(aChar)
-                  await WFH.getKeyData(aChar, dictChar)
-                  #await WFH.getAAData(aChar, dictChar)
-                  #await WFH.getSkillData(aChar, dictChar)
-
-                  #Add guild dump data to dictChar (overwrite level/class because /roleplaying and /anon)
-                  dictChar["Level"] = myGuildDump["Data"][aChar]["Level"]
-                  dictChar["Class"] = myGuildDump["Data"][aChar]["Class"]
-                  dictChar["Rank"] = myGuildDump["Data"][aChar]["Rank"]
-                  dictChar["DaysSinceLastLogin"] = myGuildDump["Data"][aChar]["DaysSinceLastOn"]
-                  dictChar["PublicNote"] = myGuildDump["Data"][aChar]["PublicNote"]
-
-                  #Add this character to guildCharList
-                  guildCharList[aChar] = dictChar
+                #Add this character to guildCharList
+                guildCharList[aChar] = dictChar
               
               buildingDump = {}
               #Prep myGuildDumps read from db with new data              
@@ -961,7 +957,7 @@ class GrokBotCommands(commands.Cog):
       #Send message to channel
       await ctx.send(myMsg)
 
-  @commands.command(name='stats', help="Outputs link stats")
+  @commands.command(name='stat', help="Outputs link stats")
   @commands.has_role("leadership")
   async def botCommand_linkstats(self, ctx, pName=""):
     myMsg = ""
@@ -970,8 +966,11 @@ class GrokBotCommands(commands.Cog):
     await self.echoCommand(ctx)
 
     from GrokBotClasses.GrokBot_who import GrokBot_who
-    GrokBot_who = GrokBot_who(ctx, "")
-    myMsg = await GrokBot_who.getStats()
+    GrokBot_who = GrokBot_who()
+    myMsg = await GrokBot_who.getRoleStatus(ctx)
+
+    await self.largeDM(ctx, myMsg)
+    
     
 
   @commands.command(name='aa', help="Compares two character's AAs")
@@ -998,3 +997,20 @@ class GrokBotCommands(commands.Cog):
 
       #Send DM to author
       await ctx.message.author.send(myMsg)  
+
+  @commands.command(name='flaglist', help="Provides short names and Magelo text for all flags")
+  async def botCommand_flaglist(self, ctx):
+    #Check if command too spammy
+    numSec = 7
+    if self.isCommandSpam(ctx, numSec):
+      myMsg = "Come on {}, lets give more than {} seconds between commands".format(ctx.message.author.mention, numSec)
+      await ctx.channel.send(myMsg)
+    else:
+      await self.echoCommand(ctx)
+      #Get Magelo class object
+      from classes.WFH_Magelo import WFH_Magelo
+      WFH = WFH_Magelo()
+      myMsg = await WFH.flaglist()
+
+      #Send DM to author
+      await self.largeDM(ctx, myMsg)        

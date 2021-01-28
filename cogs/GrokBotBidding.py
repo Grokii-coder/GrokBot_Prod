@@ -84,6 +84,32 @@ class GrokBotBidding(commands.Cog):
               await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)   
               #Cancel the auction
               self.auction = None
+              #Try to open a new item
+              await self.parseOpen(myGuildMate, message.created_at)
+
+          elif myCommand == "!dutch":
+            if self.auction == None:
+              myMsg = "No active auction, cannot change dutch value"
+              await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds) 
+            else:
+              print("Entered dutch")
+              myDutchParam = arrMsg[1]
+              #Check if parameter after dutch is a number              
+              if myDutchParam.isdigit():
+                #Convert to integer
+                myDutchParam = int(myDutchParam)
+
+                #Check if requested dutch level is greater than current
+                if myDutchParam > self.auction["DutchIndex"]:
+                  #Update to new dutch value
+                  myMsg = "Changing dutch from {} to {} for current auction of {}".format(self.auction["DutchIndex"], myDutchParam, self.auction["ItemName"])
+                  self.auction["DutchIndex"] = myDutchParam
+                else:
+                  #Throw error, cannot make the dutch value less
+                  myMsg = "Dutch value currently {} for item {}, cannot lower it to requested value of {}".format(self.auction["DutchIndex"], self.auction["ItemName"], myDutchParam)
+                #Write response to channel                
+                await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+
           elif myCommand == "!rollback":
             if self.auction == None:
               myMsg = "No active auction, cannot roll it back"
@@ -152,6 +178,7 @@ class GrokBotBidding(commands.Cog):
 
               #Close the auction
               self.auction = None
+              self.LastBid = None
 
               #Check to see if there are new items to queue
               if len(self.queuedItems) > 0:
@@ -173,7 +200,8 @@ class GrokBotBidding(commands.Cog):
       #It is the top bid, send message
       myMsg = "Closing soon:  {}".format(pMsg)
       #print(myMsg)
-      await self.msgToChannel(781591411094454273, myMsg)      
+      await self.msgToChannel(781591411094454273, myMsg)
+      await self.echoBidDone(pMyDateTime, pMsg)
     else:
       print("Newer bid, do nothing")
     
@@ -348,10 +376,6 @@ class GrokBotBidding(commands.Cog):
       #Update the LastBid variable and start echo for bidding done
       self.LastBid = pLastBidCreatedAt          
       await self.echoBidDone(pLastBidCreatedAt, "No bids on {}".format(self.auction["ItemName"]))
-    else:
-      myMsg = "Auction already running for ({}), cannot start a new auction".format(self.auction["ItemName"])
-      await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
-
 
   async def printQueued(self):
   #Build list of queued items
