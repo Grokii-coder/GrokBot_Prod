@@ -14,6 +14,10 @@ class GrokBotBidding(commands.Cog):
     self.auction = None
     self.queuedItems = {}
     self.deleteSeconds =  1800
+    self.discordSpam = 781591411094454273
+    self.discordNow = 804445947433975818
+    self.discordHistory = 804445815124787292
+
 
   @commands.Cog.listener()
   async def on_message(self, message):
@@ -69,19 +73,19 @@ class GrokBotBidding(commands.Cog):
 
             else:
               myMsg = "Couldn't parse any items from !loot command\r{}".format(myMessage)
-              await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds) 
+              await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds) 
               
           elif myCommand == "!cancel":
             if self.auction == None:
               myMsg = "No active auction, cannot cancel it"
-              await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds) 
+              await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds) 
             else:
               print("Entered cancel")
               #Build message to send to channel
               myMsg = "Auction for {} cancelled by {}".format(self.auction["ItemName"], myGuildMate)
               
               #Send to channel:
-              await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)   
+              await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)   
               #Cancel the auction
               self.auction = None
               #Try to open a new item
@@ -90,7 +94,7 @@ class GrokBotBidding(commands.Cog):
           elif myCommand == "!dutch":
             if self.auction == None:
               myMsg = "No active auction, cannot change dutch value"
-              await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds) 
+              await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds) 
             else:
               print("Entered dutch")
               myDutchParam = arrMsg[1]
@@ -108,12 +112,12 @@ class GrokBotBidding(commands.Cog):
                   #Throw error, cannot make the dutch value less
                   myMsg = "Dutch value currently {} for item {}, cannot lower it to requested value of {}".format(self.auction["DutchIndex"], self.auction["ItemName"], myDutchParam)
                 #Write response to channel                
-                await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+                await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)
 
           elif myCommand == "!rollback":
             if self.auction == None:
               myMsg = "No active auction, cannot roll it back"
-              await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds) 
+              await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds) 
             else:
               #Check if there are no bids
               if(len(self.auction["TopBids"]) == 0):
@@ -144,7 +148,7 @@ class GrokBotBidding(commands.Cog):
                 myMsg = "Rollback by {}\r{}: {}".format(myGuildMate, self.auction["ItemName"], myList)
               
               #Send the message built to the channel:
-              await self.msgToChannel(781591411094454273, myMsg, message.created_at) 
+              await self.msgToChannel(self.discordNow, myMsg, message.created_at) 
 
           elif myCommand == "!close":            
             #Calculate the time since last bid
@@ -152,10 +156,10 @@ class GrokBotBidding(commands.Cog):
             
             if self.auction == None:
               myMsg = "{} tried to !close.  No active auction, cannot close it".format(myGuildMate)
-              await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+              await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)
             elif secSinceLastBid <= 10:              
               myMsg = "{} tried to !close.  Less than 10 seconds since last bid, cannot close it".format(myGuildMate)
-              await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+              await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)
             else:
               #Write auction to the db
                 #Need to have a raid start command to get date of raid
@@ -171,10 +175,12 @@ class GrokBotBidding(commands.Cog):
               myList = await self.echoTopBids()
 
               #Create two line message with congrats
-              myMsg = "Auction closed by {}\r".format(myGuildMate)
-              myMsg += "Grats on {}: {}".format(self.auction["ItemName"], myList)
+              myMsgClosedBy = "Auction closed by {}".format(myGuildMate)
+              myMsg = "Grats on {}: {}".format(self.auction["ItemName"], myList)
 
-              await self.msgToChannel(781591411094454273, myMsg)
+              await self.msgToChannel(self.discordNow, myMsgClosedBy, self.deleteSeconds)
+              await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)
+              await self.msgToChannel(self.discordHistory, myMsg)
 
               #Close the auction
               self.auction = None
@@ -200,7 +206,7 @@ class GrokBotBidding(commands.Cog):
       #It is the top bid, send message
       myMsg = "Closing soon:  {}".format(pMsg)
       #print(myMsg)
-      await self.msgToChannel(781591411094454273, myMsg)
+      await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)
       await self.echoBidDone(pMyDateTime, pMsg)
     else:
       print("Newer bid, do nothing")
@@ -208,7 +214,6 @@ class GrokBotBidding(commands.Cog):
     
 
   #Send a message to a specific channel
-  #grok-bot-spam is 781591411094454273
   async def msgToChannel(self, pChannelID, pMsg, pPurge = 0):
     print(pMsg)
     myChannel = self.bot.get_channel(pChannelID)
@@ -259,7 +264,7 @@ class GrokBotBidding(commands.Cog):
           #Build message to send to channel
           myMsg = "{}: {}".format(self.auction["ItemName"], myList)
           #Send to channel:
-          await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+          await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)
 
           #Update the LastBid variable and start echo for bidding done
           self.LastBid = pLastBidCreatedAt          
@@ -298,14 +303,14 @@ class GrokBotBidding(commands.Cog):
           #Build message to send to channel
           myMsg = "{}: {}".format(self.auction["ItemName"], myList)
           #Send to channel:
-          await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+          await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)
 
           #Update the LastBid variable and start echo for bidding done
           self.LastBid = pLastBidCreatedAt          
           await self.echoBidDone(pLastBidCreatedAt, myMsg)          
         else:   
           myMsg = "{} had a weak bid of {}, cannot add it".format(pGuildMate, pBid)
-          await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+          await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)
           print(myMsg)
     print("parseBid ending")          
     #print(self.auction["TopBids"])
@@ -371,7 +376,7 @@ class GrokBotBidding(commands.Cog):
         myMsg += myDutchMsg
 
       #Send the message
-      await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds)
+      await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)
 
       #Update the LastBid variable and start echo for bidding done
       self.LastBid = pLastBidCreatedAt          
@@ -395,4 +400,4 @@ class GrokBotBidding(commands.Cog):
 
       myCount = myCount + 1
     myMsg = "Queued items:  {}".format(myList)
-    await self.msgToChannel(781591411094454273, myMsg, self.deleteSeconds) 
+    await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds) 
