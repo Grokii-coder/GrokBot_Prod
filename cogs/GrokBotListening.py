@@ -1,4 +1,5 @@
 from discord.ext import commands
+import discord
 
 def whatIs(myObj):
   print(type(myObj))
@@ -6,9 +7,9 @@ def whatIs(myObj):
     print(stuff)
 
 def setup(paramBot):
-  paramBot.add_cog(GrokBotBidding(paramBot))
+  paramBot.add_cog(GrokBotListening(paramBot))
 
-class GrokBotBidding(commands.Cog):
+class GrokBotListening(commands.Cog):
   def __init__(self, paramBot):
     self.bot = paramBot
     self.auction = None
@@ -18,6 +19,38 @@ class GrokBotBidding(commands.Cog):
     self.discordNow = 804445947433975818
     self.discordHistory = 804445815124787292
 
+  async def synthesize_text(self, text):
+    import os    
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="./keys/GrokBot TTS-e5040671bc17.json"
+
+    """Synthesizes speech from the input string of text."""
+    from google.cloud import texttospeech
+
+    client = texttospeech.TextToSpeechClient()
+
+    input_text = texttospeech.SynthesisInput(text=text)
+
+    # Note: the voice can also be specified by name.
+    # Names of voices can be retrieved with client.list_voices().
+    voice = texttospeech.VoiceSelectionParams(
+        language_code="en-US",
+        name="en-US-Standard-C",
+        ssml_gender=texttospeech.SsmlVoiceGender.FEMALE,
+    )
+
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3
+    )
+
+    response = client.synthesize_speech(
+        request={"input": input_text, "voice": voice, "audio_config": audio_config}
+    )
+
+    # The response's audio_content is binary.
+    with open("./mp3/open/output.mp3", "wb") as out:
+        out.write(response.audio_content)
+        print('Audio content written to file "output.mp3"')
+
 
   @commands.Cog.listener()
   async def on_message(self, message):
@@ -25,14 +58,20 @@ class GrokBotBidding(commands.Cog):
 
     #Check if the message was NOT made by the bot itself
     if message.author != self.bot.user:
-      
+      #Set channel name      
+      if type(message.channel) is discord.channel.DMChannel:
+        myChannel = "DM"
+      else:
+        myChannel = message.channel.name
+        
+
       #Echo message and channel id
-      myMsg = "{} ({}:{})".format(message.content, message.channel.name, message.channel.id, )
+      myMsg = "{} ({}:{})".format(message.content, myChannel, message.channel.id, )
       #echo message
       print(myMsg)
       #print(message.content)
 
-      #Check if the message was made to 'in-game-chat' channel id 690269605524013127
+      #Check if the message was made to SoP 'in-game-chat' channel id 690269605524013127
       if message.channel.id == 690269605524013127:
         #Parse the name of the person saying the message
         pattern = "\*\*(.*) guild:\*\* (.*)"
@@ -50,14 +89,31 @@ class GrokBotBidding(commands.Cog):
           print("myCommand is ({})".format(myCommand))
 
           #Check to see if the command is voice
-          if myCommand == "!voice":
+          if myCommand == "!voicetest":
             print(myCommand)
             myGuild = message.guild
+
+            await self.synthesize_text("Hello World!")
             
-            for aChannel in myGuild.voice_channels:
-              print(aChannel.id, aChannel)
-              if aChannel.id == 650875260618407956:
-                await aChannel.connect()
+            #for aChannel in myGuild.voice_channels:
+            #  print(aChannel.id, aChannel)
+            #  if aChannel.id == 650875260618407956:
+            #    aChannel.send("Hello", tts=True)
+                
+
+                #Either use this bot or rip code from this bot
+                #https://github.com/Gnome-py/Discord-TTS-Bot/blob/master/cogs/events_main.py
+
+            #from gtts import gTTS
+            #Try this answer:
+            #https://stackoverflow.com/questions/62494399/how-to-play-gtts-mp3-file-in-discord-voice-channel-the-user-is-in-discord-py
+            
+            #await client.send_message(message.channel, "3\n2\n\1\nTime's up!", tts=True)
+
+          
+#https://stackoverflow.com/questions/58614450/is-there-a-module-that-allows-me-to-make-python-say-things-as-audio-through-the
+
+
 
           #Check to see if the command is loot
           if myCommand == "!loot" and len(arrMsg) >= 3:

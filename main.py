@@ -30,6 +30,6 @@ keep_alive.keep_alive()
 
 #Load cogs
 client.load_extension('cogs.GrokBotCommands')
-client.load_extension('cogs.GrokBotBidding')
+client.load_extension('cogs.GrokBotListening')
 #start the bot
 client.run(TOKEN)
