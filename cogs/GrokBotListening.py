@@ -21,7 +21,7 @@ class GrokBotListening(commands.Cog):
 
   async def synthesize_text(self, text):
     import os    
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="./keys/GrokBot TTS-e5040671bc17.json"
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="./keys/GrokBot TTS-c68dba04055d.json"
 
     """Synthesizes speech from the input string of text."""
     from google.cloud import texttospeech
