@@ -15,42 +15,26 @@ class GrokBotListening(commands.Cog):
     self.auction = None
     self.queuedItems = {}
     self.deleteSeconds =  1800
-    self.discordSpam = 781591411094454273
+    
+    from GrokBotClasses.GrokBot_bidding import GrokBot_bidding   
+    self.guilds = {"SoP" : GrokBot_bidding()}
+    self.guilds["SoP"].setChannel("inGame", 690269605524013127)
+    self.guilds["SoP"].setChannel("Spam", 781591411094454273)
+    self.guilds["SoP"].setChannel("Bids", 804445947433975818)
+    self.guilds["SoP"].setChannel("History", 804445815124787292)
+
+    self.Monitor = {
+      "inGame" : [
+        #690269605524013127 #Spirit of Potato
+        self.guilds["SoP"].getChannel("inGame")
+        ]
+      , "discordChannel" : [
+        #804445947433975818 #Spirit of Potato
+        self.guilds["SoP"].getChannel("Bids")
+      ]}
+
+    #deprecated, remove when moved over to a class fully
     self.discordNow = 804445947433975818
-    self.discordHistory = 804445815124787292
-
-  async def synthesize_text(self, text):
-    import os    
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="./keys/GrokBot TTS-c68dba04055d.json"
-
-    """Synthesizes speech from the input string of text."""
-    from google.cloud import texttospeech
-
-    client = texttospeech.TextToSpeechClient()
-
-    input_text = texttospeech.SynthesisInput(text=text)
-
-    # Note: the voice can also be specified by name.
-    # Names of voices can be retrieved with client.list_voices().
-    voice = texttospeech.VoiceSelectionParams(
-        language_code="en-US",
-        name="en-US-Standard-C",
-        ssml_gender=texttospeech.SsmlVoiceGender.FEMALE,
-    )
-
-    audio_config = texttospeech.AudioConfig(
-        audio_encoding=texttospeech.AudioEncoding.MP3
-    )
-
-    response = client.synthesize_speech(
-        request={"input": input_text, "voice": voice, "audio_config": audio_config}
-    )
-
-    # The response's audio_content is binary.
-    with open("./mp3/open/output.mp3", "wb") as out:
-        out.write(response.audio_content)
-        print('Audio content written to file "output.mp3"')
-
 
   @commands.Cog.listener()
   async def on_message(self, message):
@@ -69,10 +53,10 @@ class GrokBotListening(commands.Cog):
       myMsg = "{} ({}:{})".format(message.content, myChannel, message.channel.id, )
       #echo message
       print(myMsg)
-      #print(message.content)
+      print(self.Monitor["inGame"])
 
       #Check if the message was made to SoP 'in-game-chat' channel id 690269605524013127
-      if message.channel.id == 690269605524013127:
+      if message.channel.id in self.Monitor["inGame"]:
         #Parse the name of the person saying the message
         pattern = "\*\*(.*) guild:\*\* (.*)"
         result = re.search(pattern, message.content)
@@ -152,6 +136,8 @@ class GrokBotListening(commands.Cog):
               await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds)   
               #Cancel the auction
               self.auction = None
+              self.LastBid = None
+
               #Try to open a new item
               await self.parseOpen(myGuildMate, message.created_at)
 
@@ -279,7 +265,7 @@ class GrokBotListening(commands.Cog):
 
   #Send a message to a specific channel
   async def msgToChannel(self, pChannelID, pMsg, pPurge = 0):
-    print(pMsg)
+    print("Purge in {} seconds".format(pPurge))
     myChannel = self.bot.get_channel(pChannelID)
     if pPurge > 0:
       await myChannel.send(pMsg, delete_after=pPurge)
@@ -465,3 +451,35 @@ class GrokBotListening(commands.Cog):
       myCount = myCount + 1
     myMsg = "Queued items:  {}".format(myList)
     await self.msgToChannel(self.discordNow, myMsg, self.deleteSeconds) 
+
+  async def synthesize_text(self, text):
+    import os    
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="./keys/GrokBot TTS-c68dba04055d.json"
+
+    """Synthesizes speech from the input string of text."""
+    from google.cloud import texttospeech
+
+    client = texttospeech.TextToSpeechClient()
+
+    input_text = texttospeech.SynthesisInput(text=text)
+
+    # Note: the voice can also be specified by name.
+    # Names of voices can be retrieved with client.list_voices().
+    voice = texttospeech.VoiceSelectionParams(
+        language_code="en-US",
+        name="en-US-Standard-C",
+        ssml_gender=texttospeech.SsmlVoiceGender.FEMALE,
+    )
+
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3
+    )
+
+    response = client.synthesize_speech(
+        request={"input": input_text, "voice": voice, "audio_config": audio_config}
+    )
+
+    # The response's audio_content is binary.
+    with open("./mp3/open/output.mp3", "wb") as out:
+        out.write(response.audio_content)
+        print('Audio content written to file "output.mp3"')
