@@ -1,7 +1,6 @@
 import os
 import keep_alive
 import discord
-#import typing 
 
 from discord.ext import commands 
 
