@@ -83,8 +83,7 @@ class GrokBotListening(commands.Cog):
 
           #Check to see if the command is voice
           if myCommand == "!test":            
-            print("Calling test command for {}".format(self.guilds))
-            print(self.guilds)
+            print("Calling test command for {}".format(self.guilds))           
             await self.guilds[message.guild.name].cmdTest(message, orgMessage)
 
           #Check to see if the command is loot
@@ -103,4 +102,9 @@ class GrokBotListening(commands.Cog):
           elif myCommand == "!close":            
             print("Calling close command for {}".format(self.guilds))
             await self.guilds[message.guild.name].cmdClose(message, orgMessage)
+          
+          elif myCommand == "!nondkp":
+            print("Calling nondkp command for {}".format(self.guilds))
+            await self.guilds[message.guild.name].cmdNonDkp(message, orgMessage)
+            
 

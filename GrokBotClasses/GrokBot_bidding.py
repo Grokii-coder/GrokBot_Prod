@@ -300,14 +300,53 @@ class GrokBot_bidding():
           await self.msgToChannel(self.channel["Bids"], myMsg, self.deleteSeconds)
           print(myMsg)
 
+  async def cmdNonDkp(self, dMessage, pMessage):
 
+    #Set encounter and raid leader from pMessage object
+    myRaidLeader = pMessage["guildmate"]
+    myEncounter = pMessage["message"].replace('!nondkp ', '').replace('!nondkp', '')
+    
+    #Check to see if encounter is blank
+    if myEncounter == '':
+      myEncounter = "No Encounter Specified"
 
+    #Loop through each voice channel in a guild
+    for aChannel in dMessage.guild.voice_channels:
+      print(aChannel.id, aChannel)
+      import random
 
+      #Get channel object by id
+      myChannel = self.bot.get_channel(aChannel.id)
 
+      #Get the number of people are in the channel
+      population = len(myChannel.members)
 
+      #Check if population is greater than 1
+      if population > 1:
+        #Get a roll for each discord voice connection
+        rolls = random.sample(range(0, 100), len(myChannel.members))
 
+        #Create collection for member and roll
+        dkpRoll = {}
 
+        #Iterate through members
+        for aMember in myChannel.members:
+          #If nick, use it, otherwise name
+          if aMember.nick is None:
+            myName = aMember.name
+          else:
+            myName = aMember.nick
+          
+          #Assign roll to person
+          dkpRoll[rolls.pop()] = myName
 
+        #Build a message
+        myMsg = "{} - {} - {}\r".format(aChannel, myRaidLeader, myEncounter)
+        
+        for count, aRoll in enumerate(sorted(dkpRoll, reverse=True)):
+          myMsg += "{}) {} ({})  ".format(count+1, dkpRoll[aRoll],aRoll)
+        
+        await self.msgToChannel(self.channel["Bids"], myMsg)
 
   async def cmdTest(self, dMessage, pMessage):
 
