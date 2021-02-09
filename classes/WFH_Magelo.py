@@ -224,6 +224,8 @@ class WFH_Magelo:
       myOutputDict["Class"] = charData["CLASS"]
       myOutputDict["Level"] = int(charData["LEVEL"])
       myOutputDict["Race"] = charData["RACE"]
+      myOutputDict["Guild"] = charData["GUILD_NAME"]
+      myOutputDict["Items"] = charData["item"]
       #"Rank":guilddumpRank,
       #"LastLogin":guilddumpLastLogin,
       #"DaysSinceLastLogin":guilddumpDaysSinceLastLogin,

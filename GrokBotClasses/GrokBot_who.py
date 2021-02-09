@@ -2,6 +2,14 @@ class GrokBot_who():
   def __init__(self):
     self.Msg = ""
     self.statDict = {}
+    self.role = {"Tater" : None
+                , "TaterTot" : None
+                , "Baked Potato" : None
+                , "Lone Potato" : None
+                , "Spud Bud" : None
+                , "Multiple" : None
+                , "None": None
+                } 
     
 
   async def getWho(self, ctx, pName):
@@ -166,14 +174,36 @@ class GrokBot_who():
     #Get role data
     await self.getRoleData(ctx)
 
+    
+    #Loop through each public note:
+
+      #Check for mutually exclusive roles, remove in following order:
+      #  1-SpudBud
+      #  2-LonePotato
+      #  3-BakedPotato
+      #  4-TaterTot
+      #  5-Tater
+
+      #Check if single role is spudbud
+        #Do nothing
+      #else:
+        #GetProperRole
+        #Check if LonePotato
+          #Set LonePotato if not already
+        #Check if BakedPotato
+          #Set BakedPotato if not already
+        #Check if Tater
+          #Set Tater if not already
+        #Else
+          #Set TaterTot if not already
+      
+
+
+
     #Build lists for output message
     msgNoManagedRole = await self.getNoManagedRole()
     msgUnlinkedPublicNote = await self.getUnlinkedPublicNote()
-    msgMultiManagedRole = await self.getMultiManagedRole()
-    msgNeedTater = await self.getNeedTater()
-    msgNeedTaterTot = await self.getNeedTaterTot()
-    msgNeedBakedPotato = await self.getNeedBakedPotato()
-    msgNeedLonePotato = await self.getNeedLonePotato()
+
 
     myMsg = "{}\r\r{}".format(msgNoManagedRole, msgUnlinkedPublicNote)
 
@@ -200,16 +230,6 @@ class GrokBot_who():
     return myOutput
 
 
-  async def getMultiManagedRole(self):
-    print("getMultiManagedRole")
-  async def getNeedTater(self):
-    print("getNeedTater")
-  async def getNeedTaterTot(self):
-    print("getNeedTaterTot")
-  async def getNeedBakedPotato(self):
-    print("getNeedBakedPotato")
-  async def getNeedLonePotato(self):
-    print("getNeedLonePotato")
 
 
 

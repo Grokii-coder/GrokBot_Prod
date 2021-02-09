@@ -4,7 +4,7 @@ class GrokBot_bidding():
     self.guild = None
     self.auction = None
     self.queuedItems = {}
-    self.deleteSeconds =  10
+    self.deleteSeconds =  1800
     self.channel = {"Spam" : None, "Bids" : None, "History" : None, "inGame" : None}   
 
 
@@ -539,3 +539,4 @@ class GrokBot_bidding():
     with open("./mp3/open/output.mp3", "wb") as out:
         out.write(response.audio_content)
         print('Audio content written to file "output.mp3"')
+800

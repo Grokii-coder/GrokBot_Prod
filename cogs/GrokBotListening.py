@@ -43,11 +43,14 @@ class GrokBotListening(commands.Cog):
       else:
         myChannel = message.channel.name
 
-      #Echo message and channel id
-      myMsg = "{} ({}:{})".format(message.content, myChannel, message.channel.id, )
+      #Echo message and meta data of message
+      myMsg = message.content
+      metaMsg = "({}:{}:{}:{})".format(message.guild.name,message.author,myChannel,message.channel.id)
+
       #echo message
       print(myMsg)
-      print(self.Monitor["inGame"])
+      print(metaMsg)
+      
 
       #Check if the message was made to SoP 'in-game-chat' channel id 690269605524013127
       if message.channel.id in self.Monitor["inGame"]:

@@ -199,6 +199,52 @@ class GrokBotCommands(commands.Cog):
         self.history[myAuthor][myServer][myCmd][myCreatedAt] = myFullCmd
     return 0   
 
+  @commands.command(name='find', aliases=['Find'], help='Searches for an item')
+  async def botCommand_find(self, ctx, pCharacter = "", *pItem):
+
+    myItem = " ".join(pItem)
+
+    #Setup WFH Magelo object
+    from classes.WFH_Magelo import WFH_Magelo
+    WFH = WFH_Magelo()
+
+    from classes.Inventory import Inventory
+    inv = Inventory()
+
+    #Get basic data for this character and populate dictChar with the data 
+    dictChar = await WFH.getBasicData(pCharacter)
+
+    #Check to see if doesn't exist or anon, etc
+
+
+    myMsg = ""
+    #Iterate through each item
+    for aItem in dictChar["Items"]:
+      mySlot = int(aItem["SLOT"])
+      #myIcon = aItem["ICON"]
+      myName = aItem["NAME"]
+      myStack = aItem["STACK"]
+      #myID = aItem["ID"]
+      #myLink = aItem["LINK"]
+      #myHTML = aItem["HTML"]
+
+      mySlotName = await inv.getSlotName(mySlot)
+      if mySlotName == "Undefined":
+        mySlotName = "Slot {} Undefined".format(mySlot)
+
+      
+      if myName == myItem:
+        thisItem = "{}: {} x{}\r".format(mySlotName, myName, myStack)
+        print(thisItem)
+        myMsg += thisItem
+      
+    if len(myMsg) > 0:
+      await ctx.channel.send(myMsg)
+    else:
+      await ctx.channel.send("{} - Not found".format(myItem))
+        
+
+
   @commands.command(name='prereq', aliases=['Prereq', 'prereqs', 'Prereqs'], help='Looks up prerequisites for a PoP flag')
   #async def botCommand_test(self, ctx, parmDays: typing.Optional[int] = 30, parmPlayer: typing.Optional[str] = None):
   async def botCommand_test(self, ctx, *args):
