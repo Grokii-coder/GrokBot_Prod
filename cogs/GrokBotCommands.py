@@ -200,8 +200,10 @@ class GrokBotCommands(commands.Cog):
     return 0   
 
   @commands.command(name='find', aliases=['Find'], help='Searches for an item')
-  async def botCommand_find(self, ctx, pCharacter = "", *pItem):
+  async def botCommand_find(self, ctx, *pItem):
 
+    #Function to get member link and return a list of characters
+    charList = await self.getChars(ctx)
     myItem = " ".join(pItem)
 
     #Setup WFH Magelo object
@@ -211,37 +213,42 @@ class GrokBotCommands(commands.Cog):
     from classes.Inventory import Inventory
     inv = Inventory()
 
-    #Get basic data for this character and populate dictChar with the data 
-    dictChar = await WFH.getBasicData(pCharacter)
+    for aChar in charList:
+      #Get basic data for this character and populate dictChar with the data 
+      dictChar = await WFH.getBasicData(aChar)
 
-    #Check to see if doesn't exist or anon, etc
+      #Check to see if doesn't exist or anon, etc
+
+      myMsg = ""
+      #Iterate through each item
+      for aItem in dictChar["Items"]:
+        mySlot = int(aItem["SLOT"])
+        #myIcon = aItem["ICON"]
+        myName = aItem["NAME"]
+        myStack = aItem["STACK"]
+        #myID = aItem["ID"]
+        #myLink = aItem["LINK"]
+        #myHTML = aItem["HTML"]
 
 
-    myMsg = ""
-    #Iterate through each item
-    for aItem in dictChar["Items"]:
-      mySlot = int(aItem["SLOT"])
-      #myIcon = aItem["ICON"]
-      myName = aItem["NAME"]
-      myStack = aItem["STACK"]
-      #myID = aItem["ID"]
-      #myLink = aItem["LINK"]
-      #myHTML = aItem["HTML"]
+        if myStack is None or not myStack.isnumeric():
+          myStack = 1
 
-      mySlotName = await inv.getSlotName(mySlot)
-      if mySlotName == "Undefined":
-        mySlotName = "Slot {} Undefined".format(mySlot)
+        mySlotName = await inv.getSlotName(mySlot)
+        if mySlotName == "Undefined":
+          mySlotName = "Slot {} Undefined".format(mySlot)
 
-      
-      if myName == myItem:
-        thisItem = "{}: {} x{}\r".format(mySlotName, myName, myStack)
-        print(thisItem)
-        myMsg += thisItem
-      
-    if len(myMsg) > 0:
-      await ctx.channel.send(myMsg)
-    else:
-      await ctx.channel.send("{} - Not found".format(myItem))
+        #print("find:  is {} in {}".format(myItem.lower(), myName.lower()))
+        if myItem.lower() in myName.lower():
+          thisItem = "{} {}: {} x{}\r".format(aChar, mySlotName, myName, myStack)
+          print(thisItem)
+          myMsg += thisItem
+        
+      if len(myMsg) > 0:
+        await ctx.channel.send(myMsg)
+      else:
+        myMsg = "{} - No item found named {}\r".format(aChar, myItem)
+        await ctx.channel.send(myMsg)
         
 
 
@@ -617,6 +624,11 @@ class GrokBotCommands(commands.Cog):
 
                 #Get Magelo data for this character
                 dictChar = await WFH.getBasicData(aChar)
+
+                #Remove items from dictChar
+                dictChar.pop('Items', None)
+
+                #Get Key data
                 await WFH.getKeyData(aChar, dictChar)
                 #await WFH.getAAData(aChar, dictChar)
                 #await WFH.getSkillData(aChar, dictChar)
@@ -638,16 +650,36 @@ class GrokBotCommands(commands.Cog):
               #Get current date/time and set meta data
               from datetime import datetime, timedelta              
               now = datetime.now() - timedelta(hours=5, minutes=0)
-              buildingDump["MetaData"] = {"Uploader" : author, "DateTime" : now.strftime("%m/%d/%Y %H:%M:%S")}              
+              buildingDump["MetaData"] = {"Uploader" : author, "DateTime" : now.strftime("%m/%d/%Y %H:%M:%S")}
 
-              #Upload previous dump (newestGuildDUmp) to previous dump
-              await repDB.setGuildProperty(ctx, "PreviousGuildDump", newestGuildDump)
+            print("Finished for loop of each character")
 
-              #Upload guild dump just built to newest dump
-              await repDB.setGuildProperty(ctx, "NewestGuildDump", buildingDump)
+            #begin error trap for previous dump
+            while True:
+              try:
+                #Upload previous dump (newestGuildDUmp) to previous dump
+                print("Upload previous dump to previous dump")
+                await repDB.setGuildProperty(ctx, "PreviousGuildDump", newestGuildDump)
+                print("Upload complete")
+                break
+              except:
+                print("Failed to upload previous dump:")
+                break
+                
 
-              print("Finished for loop of each character, send msg")
-              myMsg = "Successly uploaded!\r\rToDo\r1) Change this is a DM?\r"
+            #begin error trap for newest dump
+            while True:
+              try:
+                #Upload guild dump just built to newest dump
+                print("Upload newest dump that was just created")
+                await repDB.setGuildProperty(ctx, "NewestGuildDump", buildingDump)
+                print("Upload complete")
+                break
+              except:
+                print("Failed to upload newest dump:")
+                break
+            
+            myMsg = "Successly uploaded!\r\rToDo\r1) Change this is a DM?\r"
 
         #Echo command 
         await self.echoCommand(ctx)
@@ -849,6 +881,46 @@ class GrokBotCommands(commands.Cog):
 
           #break out of for loop
           break
+
+
+  async def getChars(self, ctx):
+    #Get data from replitDB
+    from classes.replitDB import replitDB
+    repDB = replitDB()
+        
+    #Get newestDump from database
+    newestDump = await repDB.getGuildProperty(ctx, "NewestGuildDump")
+    links = await repDB.getGuildProperty(ctx, "Links")
+    
+#if aLink["DiscordMemberID"] == pMember.id:
+#if value in word_freq.values():
+    #whatIs(ctx.author)
+    #print(links)
+    print("Looking for ({})".format((ctx.author.id)))
+    
+    myPublicNote = ""
+    arrOutput = []
+    for aLink in links:      
+      if aLink["DiscordMemberID"] == ctx.author.id:
+        #print("Foudn it")
+        myPublicNote = aLink["PublicNote"]
+    
+    if myPublicNote == "":
+      #No match
+      print("No Match, need to link")
+    else:
+      #Match found, get list of characters
+      print("List of characters for {}:".format(myPublicNote))
+      arrOutput = []
+      for aChar in newestDump["Data"]:
+        aPublicNote = newestDump["Data"][aChar]["PublicNote"].lower()
+        #print("Checking {}:  {}".format(aChar, aPublicNote))
+
+        if aPublicNote.lower() == myPublicNote.lower():
+          arrOutput.append(aChar)
+    
+    return arrOutput
+  
 
   @commands.command(name='link', help="Links a EQ Public Note with a discord username")
   @commands.has_role("leadership")

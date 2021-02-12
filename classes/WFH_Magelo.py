@@ -214,6 +214,7 @@ class WFH_Magelo:
       return -1
 
   async def parseCharacterResponse(self, paramResponse, paramName, myOutputDict):
+    print("  Parse response for {}".format(paramName))
     #Check if response was a success
     if paramResponse["character"][paramName]["Status"] == "Success":
       #Set charData dictionary to the character data in the response
@@ -225,7 +226,14 @@ class WFH_Magelo:
       myOutputDict["Level"] = int(charData["LEVEL"])
       myOutputDict["Race"] = charData["RACE"]
       myOutputDict["Guild"] = charData["GUILD_NAME"]
-      myOutputDict["Items"] = charData["item"]
+      if "item" in charData:
+        print("Set items")
+        
+        myOutputDict["Items"] = charData["item"]
+      else:
+        print("blank items")
+        print(charData.keys())
+        myOutputDict["Items"] = {}
       #"Rank":guilddumpRank,
       #"LastLogin":guilddumpLastLogin,
       #"DaysSinceLastLogin":guilddumpDaysSinceLastLogin,
