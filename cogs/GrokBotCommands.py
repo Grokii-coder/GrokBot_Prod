@@ -19,6 +19,9 @@ class GrokBotCommands(commands.Cog):
     self.bot = paramBot
     self.badList = ["penis", 'richard', 'dick']
     self.history = {}
+    self.ignore = 510907044513972227
+
+
     self.help = {}
     self.help["needs"] = {"Scope" : "Guild"}
     self.help["topten"] = {"Scope" : "Guild"}
@@ -201,54 +204,94 @@ class GrokBotCommands(commands.Cog):
 
   @commands.command(name='find', aliases=['Find'], help='Searches for an item')
   async def botCommand_find(self, ctx, *pItem):
-
-    #Function to get member link and return a list of characters
-    charList = await self.getChars(ctx)
-    myItem = " ".join(pItem)
-
-    #Setup WFH Magelo object
-    from classes.WFH_Magelo import WFH_Magelo
-    WFH = WFH_Magelo()
-
-    from classes.Inventory import Inventory
-    inv = Inventory()
-
-    for aChar in charList:
-      #Get basic data for this character and populate dictChar with the data 
-      dictChar = await WFH.getBasicData(aChar)
-
-      #Check to see if doesn't exist or anon, etc
-
-      myMsg = ""
-      #Iterate through each item
-      for aItem in dictChar["Items"]:
-        mySlot = int(aItem["SLOT"])
-        #myIcon = aItem["ICON"]
-        myName = aItem["NAME"]
-        myStack = aItem["STACK"]
-        #myID = aItem["ID"]
-        #myLink = aItem["LINK"]
-        #myHTML = aItem["HTML"]
-
-
-        if myStack is None or not myStack.isnumeric():
-          myStack = 1
-
-        mySlotName = await inv.getSlotName(mySlot)
-        if mySlotName == "Undefined":
-          mySlotName = "Slot {} Undefined".format(mySlot)
-
-        #print("find:  is {} in {}".format(myItem.lower(), myName.lower()))
-        if myItem.lower() in myName.lower():
-          thisItem = "{} {}: {} x{}\r".format(aChar, mySlotName, myName, myStack)
-          print(thisItem)
-          myMsg += thisItem
+    print(self.ignore)
+    print(ctx.channel.id)
+    
+    #Check if this is in #general
+    if self.ignore == ctx.channel.id:
+      myMsg = "Use grok-bot-spam channel instead"
+      await ctx.channel.send(myMsg, delete_after=5)
+      await ctx.message.delete() 
+    
+    #Check if no argument was passed to pItem
+    elif len(pItem) == 0:
+      myMsg = "No search parameter passed to '?find' command"
+      await ctx.channel.send(myMsg, delete_after=5)
+      await ctx.message.delete()
+    #Check if one argument passed and it is 'guild'
+    elif len(pItem) == 1 and pItem[0].lower() == 'guild':
+      myMsg = "No search parameter passed to '?find guild' command"
+      await ctx.channel.send(myMsg, delete_after=5)
+      await ctx.message.delete()
+    else:    
+      #Check if the first argument is 'guild'
+      if pItem[0].lower() == 'guild':
         
-      if len(myMsg) > 0:
-        await ctx.channel.send(myMsg)
+        #Remove the first item
+        myItem = " ".join(pItem[1:])
+        print("Search guild for {}".format(myItem))
+
+        #Get the list of guild characters
+        charList = await self.getChars(ctx, 1)
       else:
-        myMsg = "{} - No item found named {}\r".format(aChar, myItem)
-        await ctx.channel.send(myMsg)
+        charList = await self.getChars(ctx)
+        myItem = " ".join(pItem)
+      
+      myItem = " ".join(pItem)
+
+      #Setup WFH Magelo object
+      from classes.WFH_Magelo import WFH_Magelo
+      WFH = WFH_Magelo()
+
+      from classes.Inventory import Inventory
+
+      
+      inv = Inventory()
+
+      myMsg = "Looking for ({}) for the following characters: {}".format(myItem, " ".join(charList))
+      await ctx.channel.send(myMsg)
+      for aChar in charList:
+        
+
+        #Get basic data for this character:
+        dictChar = await WFH.getBasicData(aChar)
+
+        #Check to see if doesn't exist or anon, etc
+        if not dictChar["MageloStatus"] == "Normal":
+          myMsg = "{}: {}".format(aChar, dictChar["MageloStatus"])
+        elif not "Items" in dictChar:
+          myMsg = "{}: Literally no items".format(aChar)
+        else:
+          myMsg = ""
+          #Iterate through each item
+          for aItem in dictChar["Items"]:
+            mySlot = int(aItem["SLOT"])
+            #myIcon = aItem["ICON"]
+            myName = aItem["NAME"]
+            myStack = aItem["STACK"]
+            #myID = aItem["ID"]
+            #myLink = aItem["LINK"]
+            #myHTML = aItem["HTML"]
+
+
+            if myStack is None or not myStack.isnumeric():
+              myStack = 1
+
+            mySlotName = await inv.getSlotName(mySlot)
+            if mySlotName == "Undefined":
+              mySlotName = "Slot {} Undefined".format(mySlot)
+
+            #print("find:  is {} in {}".format(myItem.lower(), myName.lower()))
+            if myItem.lower() in myName.lower():
+              thisItem = "{} {}: {} x{}\r".format(aChar, mySlotName, myName, myStack)
+              print(thisItem)
+              myMsg += thisItem
+          
+        if len(myMsg) > 0:
+          await ctx.channel.send(myMsg)
+        #else:
+          #myMsg = "{} - No item found named {}\r".format(aChar, myItem)
+          #await ctx.channel.send(myMsg)
         
 
 
@@ -883,7 +926,7 @@ class GrokBotCommands(commands.Cog):
           break
 
 
-  async def getChars(self, ctx):
+  async def getChars(self, ctx, pGuild=0):
     #Get data from replitDB
     from classes.replitDB import replitDB
     repDB = replitDB()
@@ -892,23 +935,28 @@ class GrokBotCommands(commands.Cog):
     newestDump = await repDB.getGuildProperty(ctx, "NewestGuildDump")
     links = await repDB.getGuildProperty(ctx, "Links")
     
-#if aLink["DiscordMemberID"] == pMember.id:
-#if value in word_freq.values():
-    #whatIs(ctx.author)
-    #print(links)
     print("Looking for ({})".format((ctx.author.id)))
     
+    print("pGuild = {}".format(pGuild))
     myPublicNote = ""
-    arrOutput = []
-    for aLink in links:      
-      if aLink["DiscordMemberID"] == ctx.author.id:
-        #print("Foudn it")
-        myPublicNote = aLink["PublicNote"]
+    #Check if guild is 1
+    if pGuild == 1:
+      #Use public note of Guild
+      myPublicNote = 'Guild'
+    else:
+      #Get public note from linked magelo accounts
+      arrOutput = []
+      for aLink in links:      
+        if aLink["DiscordMemberID"] == ctx.author.id:
+          #print("Foudn it")
+          myPublicNote = aLink["PublicNote"]
     
+    #Check if guild has been set
     if myPublicNote == "":
       #No match
       print("No Match, need to link")
     else:
+      print("myPublicNote is {}".format(myPublicNote))
       #Match found, get list of characters
       print("List of characters for {}:".format(myPublicNote))
       arrOutput = []
