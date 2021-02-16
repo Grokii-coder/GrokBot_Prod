@@ -46,7 +46,34 @@ class Everquest:
     else:
       return ""
 
-  
+
+
+  async def parseSpellBook(self, pDump):
+    #Create dictionary for in-game guild dump data
+    myData = []
+    
+    #Split guild dump into lines    
+    f = pDump.split('\\r\\n')
+
+    #read in each line
+    for line in f:
+      #split line by tab
+      items = line.split("\\t")
+
+      #Check to see if line had 2 elements
+      if len(items) == 2:
+        myLevel = items[0]
+        myName = items[1]
+
+        #Print out spellbook
+        #print("Level ({}) Name ({})".format(myLevel, myName))
+
+        #Add spellname to myData
+        myData.append(myName)
+
+    return myData        
+
+
   async def parseGuildDump(self, pDump):
     import datetime
     print("Convert guild dump to dictionary")

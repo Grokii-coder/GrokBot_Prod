@@ -203,17 +203,50 @@ class GrokBotCommands(commands.Cog):
     return 0   
 
   @commands.command(name='spell', aliases=['Spell'], help='TBD')
-  async def botCommand_spell(self, ctx, pChar = None):
-    if pChar is None:
-      print("Must enter a character's name")
+  async def botCommand_spell(self, ctx, pClass = None):
+    #Check if a character class was sent
+    if pClass is None:
+      myMsg = "Must enter a character class"
+      print(myMsg)
+    #Check if there is at least one attachment
+    elif not ctx.message.attachments:
+      myMsg = "No attached character spellbook"
+      print(myMsg)
     else:
-      print(pChar)
-      from classes.Spell import Spell     
-      mySpells = Spell()
-
-      await mySpells.Iterate()
+      #Received both a class and an attachment
+      #myMsg = "Class {} and attachment".format(pClass)
       
+      #Read context of text file
+      attachment_contents = await ctx.message.attachments[0].read()  
 
+      #Set the data to a string
+      attachmentData = str(attachment_contents)
+      #Remove left two characters (b')
+      attachmentData = attachmentData[2:] 
+      #Remove the final character (') 
+      attachmentData = attachmentData[:-1]
+
+      #Parse data with Everquest class
+      from classes.Everquest import Everquest
+      EQ = Everquest()
+
+      spellbookData = await EQ.parseSpellBook(attachmentData)
+      
+      #Check if data was parsed
+      if spellbookData is None:
+        myMsg = "Error processing guild dump: {}".format(ctx.message.attachments[0].filename)
+        print(myMsg)
+      else:
+        #spellbookData looks good
+        #Create a spell class object
+        from classes.Spell import Spell     
+        mySpells = Spell()
+
+        #Compare spell data
+        myMsg = await mySpells.compare(pClass, spellbookData)
+
+      #Send response as DM
+      await self.largeDM(ctx, myMsg)
       #await ctx.channel.send(myMsg)
 
   @commands.command(name='vt', aliases=['VT', 'Vt'], help='Checks VT Status')
