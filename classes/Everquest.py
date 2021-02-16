@@ -5,6 +5,33 @@ class Everquest:
       "key1" : "Spirit of Potato",
       "key2" : "Value"
       }
+    self.empKey = {
+      19716 : "Zazuzh's Idol"
+      ,19717 : "Zherozsh's Ring"
+      ,19718 : "Ssraeshzian Insignia"
+      ,17118 : "Taskmaster's Pouch"
+      ,19719 : "Ring of the Shissar"
+    }
+
+    self.VTKey = {
+      22186 : "Lucid Shard (Dat) Fungus Grove"
+      ,22190 : "Lucid Shard (Dax) Akheva Ruins"
+      ,22185 : "Lucid Shard (Kel) The Grey"
+      ,22194 : "Lucid Shard (Kelera) Sanctus Seru or Katta"
+      ,22191 : "Lucid Shard (Lor) Dawnshroud Peaks"
+      ,22188 : "Lucid Shard (Raf) The Deep"
+      ,22187 : "Lucid Shard (Set) The Scarlet Desert"
+      ,22192 : "Lucid Shard (Tak) Maiden's Eye"
+      ,22193 : "Lucid Shard (Ved) Acrylia Cavern"
+      ,22189 : "Lucid Shard (Vin) Ssraeshza Temple"
+      ,17323 : "Shadowed Scepter Frame"
+      ,9410 : "Planes Rift"
+      ,22196 : "Glowing Orb of Luclinite"
+      ,22198 : "The Scepter of Shadows"
+      ,17324 : "Unadorned Scepter of Shadows"
+    }
+
+
 
   async def getEQGuildName(self, ctx):
     #Check if ctx object has a guild component

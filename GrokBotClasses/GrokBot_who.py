@@ -92,9 +92,9 @@ class GrokBot_who():
 
     #Check if there is a nickname
     if pNick is None:
-      myHeader = "Discord name {}\r\r".format(pName)      
+      myHeader = "Discord name {}\r\r".format(str(pName))     
     else:
-      myHeader = "Discord name {}\rDiscord nickname {}\r\r".format(pName, pNick)  
+      myHeader = "Discord name {}\rDiscord nickname {}\r\r".format(str(pName), str(pNick))
     
     myMsg = myHeader + myMsg
 
@@ -148,11 +148,11 @@ class GrokBot_who():
 
     #Check if there is a nickname
     if pName is None:
-      myHeader = "Discord name {} ({} time flagged)\r\r".format("<<Need to link>>", myTotal)
+      myHeader = "Discord name **{}** ({} time flagged)\r\r".format("<<Need to link>>", myTotal)
     elif pNick is None:
-      myHeader = "Discord name {} ({} time flagged)\r\r".format(pMention, myTotal, pNick)  
+      myHeader = "Discord name **{}** ({} time flagged)\r\r".format(pName.name, myTotal)  
     else:
-      myHeader = "Discord name {} ({} time flagged)\rDiscord without nickname {}\r\r".format(pMention, myTotal, pName)  
+      myHeader = "Discord name **{}** ({} time flagged)\rDiscord without nickname {}\r\r".format(pNick, myTotal, pName)  
     
     myMsg = myHeader + myMsg
 

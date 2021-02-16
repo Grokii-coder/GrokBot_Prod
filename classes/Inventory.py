@@ -1,7 +1,121 @@
 class Inventory:
-  def __init__(self):
-    self.mySlot = {
+  async def getSlotName(self, pSlot):
+    for aType in self.ItemSlots:
+      if pSlot in self.ItemSlots[aType]:
+        return self.ItemSlots[aType][pSlot]
+    
+    return "Undefined"
 
+
+
+  async def VexThalStatus(self, pChar):
+    #Setup WFH Magelo object
+    from classes.WFH_Magelo import WFH_Magelo
+    from classes.Everquest import Everquest
+    WFH = WFH_Magelo()
+    EQ = Everquest()
+
+    #Get basic data for this character:
+    dictChar = await WFH.getBasicData(pChar)
+
+    #Check if status wasn't normal
+    if not dictChar["MageloStatus"] == "Normal":
+      return "Invalid MageloStatus: {}".format(dictChar["MageloStatus"])
+
+    #Get key data and add it to dictChar
+    await WFH.getKeyData(pChar, dictChar)
+
+    #Check if VT Key already on key ring
+    if "Vex Thal" in dictChar["Major Keys"]:
+      return "{} is already keyed for Vex Thal".format(pChar)
+    else:
+      myHas = ""
+      myNeeds = ""
+      #Iterate through each item on the character
+      for aItem in dictChar["Items"]:
+        #mySlot = int(aItem["SLOT"])
+        #myIcon = aItem["ICON"]
+        myName = aItem["NAME"]
+        #myStack = aItem["STACK"]
+        myID = int(aItem["ID"])
+        #myLink = aItem["LINK"]
+        #myHTML = aItem["HTML"]
+
+        print("{}: {}".format(myID, myName))
+
+        #Check to see if Ring of the Shissar on keyring
+        if not "Ssraeshza Emperor's Chamber" in dictChar["Major Keys"]: 
+          #Check if this item is in EQ.empKey
+          if myID in EQ.empKey:
+            #Add to myHas
+            myHas += "  {}\r".format(EQ.empKey[myID])
+            #Remove this item from EQ.empKey
+            EQ.empKey.pop(myID)
+
+        #Check if this item is in EQ.VTKey
+        if myID in EQ.VTKey:
+          #Add to myHas
+          myHas += "  {}\r".format(EQ.VTKey[myID])
+          #Remove this item from EQ.empKey
+          EQ.VTKey.pop(myID)
+
+      #Check to see if Ring of the Shissar on keyring
+      if not "Ssraeshza Emperor's Chamber" in dictChar["Major Keys"]: 
+        for aItem in EQ.empKey:
+          #Add to myNeeds
+          myNeeds += "  {}\r".format(EQ.empKey[aItem])
+
+      for aItem in EQ.VTKey:
+        #Add to myNeeds
+        myNeeds += "  {}\r".format(EQ.VTKey[aItem])
+      
+      myMsg = "VT key for {}:\r\rHave\r{}\rNeed\r{}".format(pChar, myHas, myNeeds)
+
+
+    return myMsg
+
+
+  async def findItemByName(self, pChar, pItem):
+    #Setup WFH Magelo object
+    from classes.WFH_Magelo import WFH_Magelo
+    WFH = WFH_Magelo()
+    
+    #Get basic data for this character:
+    dictChar = await WFH.getBasicData(pChar)
+
+    #Check to see if doesn't exist or anon, etc
+    if not dictChar["MageloStatus"] == "Normal":
+      return "Invalid MageloStatus: {}".format(dictChar["MageloStatus"])
+    elif not "Items" in dictChar:
+      return "No Items"
+    else:
+      myMsg = ""
+      #Iterate through each item
+      for aItem in dictChar["Items"]:
+        mySlot = int(aItem["SLOT"])
+        #myIcon = aItem["ICON"]
+        myName = aItem["NAME"]
+        myStack = aItem["STACK"]
+        #myID = aItem["ID"]
+        #myLink = aItem["LINK"]
+        #myHTML = aItem["HTML"]
+
+        if myStack is None or not myStack.isnumeric():
+          myStack = 1
+
+        mySlotName = await self.getSlotName(mySlot)
+        if mySlotName == "Undefined":
+          mySlotName = "Slot {} Undefined".format(mySlot)
+
+        if pItem.lower() in myName.lower():
+          thisItem = "{} {}: {} x{}\r".format(pChar, mySlotName, myName, myStack)
+          myMsg += thisItem
+      return myMsg
+
+
+  def __init__(self):
+    self.ItemSlots = {
+    "Worn" : {
       0 : "Charm"
       ,1 : "Left Ear"
       ,2 : "Head"
@@ -25,9 +139,8 @@ class Inventory:
       ,20 : "Waist"
       ,21 : "Power Source"
       ,22 : "Ammo"
-
-      #Inventory Slots
-      ,23 : "Inv1"
+    }, "Inventory" : {
+      23 : "Inv1"
       ,24 : "Inv3"
       ,25 : "Inv5"
       ,26 : "Inv7"
@@ -131,8 +244,8 @@ class Inventory:
       ,328 : "Inv8|Bag8"
       ,329 : "Inv8|Bag9"
       ,330 : "Inv8|Bag10"
-
-      ,2000 : "Bank"
+    }, "Bank" : {
+      2000 : "Bank"
       ,2004 : "Bank"
       ,2001 : "Bank"
       ,2005 : "Bank"
@@ -148,8 +261,6 @@ class Inventory:
       ,2014 : "Bank"
       ,2011 : "Bank"
       ,2015 : "Bank"
-
-
 
       ,2031 : "Bank1|Bag1"
       ,2032 : "Bank1|Bag2"
@@ -311,8 +422,8 @@ class Inventory:
       ,2188 : "Bank16|Bag8"
       ,2189 : "Bank16|Bag9"
       ,2190 : "Bank16|Bag10"
-
-      ,2500 : "Shared1|Bag"
+    }, "Shared" : {
+      2500 : "Shared1|Bag"
       ,2501 : "Shared2|Bag"
       ,2531 : "Shared1|Bag1"
       ,2532 : "Shared1|Bag2"
@@ -334,12 +445,4 @@ class Inventory:
       ,2548 : "Shared2|Bag8"
       ,2549 : "Shared2|Bag9"
       ,2550 : "Shared2|Bag10"
-
-
-      }
-
-  async def getSlotName(self, pSlot):
-    if pSlot in self.mySlot:
-      return self.mySlot[pSlot]
-    else:
-      return "Undefined"
+    }}

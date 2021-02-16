@@ -202,11 +202,33 @@ class GrokBotCommands(commands.Cog):
         self.history[myAuthor][myServer][myCmd][myCreatedAt] = myFullCmd
     return 0   
 
+  @commands.command(name='spell', aliases=['Spell'], help='TBD')
+  async def botCommand_spell(self, ctx, pChar = None):
+    if pChar is None:
+      print("Must enter a character's name")
+    else:
+      print(pChar)
+      from classes.Spell import Spell     
+      mySpells = Spell()
+
+      await mySpells.Iterate()
+      
+
+      #await ctx.channel.send(myMsg)
+
+  @commands.command(name='vt', aliases=['VT', 'Vt'], help='Checks VT Status')
+  async def botCommand_vt(self, ctx, pChar = None):
+    if pChar is None:
+      print("Must enter a character's name")
+    else:
+      print(pChar)
+      from classes.Inventory import Inventory     
+      inv = Inventory()
+      myMsg = await inv.VexThalStatus(pChar)
+      await ctx.channel.send(myMsg)
+
   @commands.command(name='find', aliases=['Find'], help='Searches for an item')
-  async def botCommand_find(self, ctx, *pItem):
-    print(self.ignore)
-    print(ctx.channel.id)
-    
+  async def botCommand_find(self, ctx, *pItem):    
     #Check if this is in #general
     if self.ignore == ctx.channel.id:
       myMsg = "Use grok-bot-spam channel instead"
@@ -236,62 +258,30 @@ class GrokBotCommands(commands.Cog):
       else:
         charList = await self.getChars(ctx)
         myItem = " ".join(pItem)
-      
-      myItem = " ".join(pItem)
 
-      #Setup WFH Magelo object
-      from classes.WFH_Magelo import WFH_Magelo
-      WFH = WFH_Magelo()
-
-      from classes.Inventory import Inventory
-
-      
+      from classes.Inventory import Inventory     
       inv = Inventory()
 
+      ignoredChar = []
       myMsg = "Looking for ({}) for the following characters: {}".format(myItem, " ".join(charList))
       await ctx.channel.send(myMsg)
       for aChar in charList:
-        
+        #Use inventory object to search for the item
+        myMsg = await inv.findItemByName(aChar, myItem)
 
-        #Get basic data for this character:
-        dictChar = await WFH.getBasicData(aChar)
-
-        #Check to see if doesn't exist or anon, etc
-        if not dictChar["MageloStatus"] == "Normal":
-          myMsg = "{}: {}".format(aChar, dictChar["MageloStatus"])
-        elif not "Items" in dictChar:
-          myMsg = "{}: Literally no items".format(aChar)
-        else:
+        #Check if character was ignored due to character status
+        if "Invalid MageloStatus" in myMsg:
           myMsg = ""
-          #Iterate through each item
-          for aItem in dictChar["Items"]:
-            mySlot = int(aItem["SLOT"])
-            #myIcon = aItem["ICON"]
-            myName = aItem["NAME"]
-            myStack = aItem["STACK"]
-            #myID = aItem["ID"]
-            #myLink = aItem["LINK"]
-            #myHTML = aItem["HTML"]
-
-
-            if myStack is None or not myStack.isnumeric():
-              myStack = 1
-
-            mySlotName = await inv.getSlotName(mySlot)
-            if mySlotName == "Undefined":
-              mySlotName = "Slot {} Undefined".format(mySlot)
-
-            #print("find:  is {} in {}".format(myItem.lower(), myName.lower()))
-            if myItem.lower() in myName.lower():
-              thisItem = "{} {}: {} x{}\r".format(aChar, mySlotName, myName, myStack)
-              print(thisItem)
-              myMsg += thisItem
+          ignoredChar.append(aChar)
           
         if len(myMsg) > 0:
           await ctx.channel.send(myMsg)
-        #else:
-          #myMsg = "{} - No item found named {}\r".format(aChar, myItem)
-          #await ctx.channel.send(myMsg)
+    
+    #Check if any characters were ignored
+    if len(ignoredChar) > 0:
+      myIgnored = " ".join(ignoredChar)
+      myMsg = "Role/Anon chars ignored: {}".format(myIgnored)
+      await ctx.channel.send(myMsg)
         
 
 
