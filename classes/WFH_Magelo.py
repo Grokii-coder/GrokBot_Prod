@@ -227,12 +227,8 @@ class WFH_Magelo:
       myOutputDict["Race"] = charData["RACE"]
       myOutputDict["Guild"] = charData["GUILD_NAME"]
       if "item" in charData:
-        print("Set items")
-        
         myOutputDict["Items"] = charData["item"]
       else:
-        print("blank items")
-        print(charData.keys())
         myOutputDict["Items"] = {}
       #"Rank":guilddumpRank,
       #"LastLogin":guilddumpLastLogin,

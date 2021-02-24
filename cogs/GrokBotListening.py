@@ -11,8 +11,10 @@ def setup(paramBot):
 
 class GrokBotListening(commands.Cog):
   def __init__(self, paramBot):
+    from classes.Role import Role 
     self.bot = paramBot
-    
+    self.role = Role()
+
     from GrokBotClasses.GrokBot_bidding import GrokBot_bidding   
     self.guilds = {"Potatoville" : GrokBot_bidding()}
     self.guilds["Potatoville"].setBot(self.bot)
@@ -36,7 +38,24 @@ class GrokBotListening(commands.Cog):
     import re
 
     #Check if the message was NOT made by the bot itself
-    if message.author != self.bot.user:
+    #Check if this message is from Nazi Bot
+    if message.author.name == "Grammar Nazi Bot":
+      import random
+      import asyncio
+
+      myComment = [
+      "You sit on a throne of lies!"
+      ,"Would you like to sleep with the fishes?"
+      ,"So very interesting, tell me moar?"
+      ,"Well well well, what do we have here?"
+      ,"Zombies eat brains, don't worry your safe"
+      ,"Better grab my dumbrella its really stupid outside today"
+      ]
+
+      await message.channel.send(random.choice(myComment), delete_after=7)
+      await asyncio.sleep(7)
+      message.delete
+    elif message.author != self.bot.user:
       #Set channel name      
       if type(message.channel) is discord.channel.DMChannel:
         myChannel = "DM"
@@ -51,7 +70,6 @@ class GrokBotListening(commands.Cog):
       print(myMsg)
       print(metaMsg)
       
-
       #Check if the message was made to SoP 'in-game-chat' channel id 690269605524013127
       if message.channel.id in self.Monitor["inGame"]:
         #Parse the name of the person saying the message
@@ -84,30 +102,33 @@ class GrokBotListening(commands.Cog):
           orgMessage["command"] = myCommand
           print("myCommand is ({})".format(myCommand))
 
-          #Check to see if the command is voice
-          if myCommand == "!test":            
+          #Check to see if the command is test
+          if myCommand == "!test":    
             print("Calling test command for {}".format(self.guilds))           
             await self.guilds[message.guild.name].cmdTest(message, orgMessage)
-
-          #Check to see if the command is loot
-          if myCommand == "!loot" and len(arrMsg) >= 3:
-            print("Calling loot command for {}".format(self.guilds))
-            await self.guilds[message.guild.name].cmdLoot(message, orgMessage) 
-              
-          elif myCommand == "!cancel":
-            print("Calling cancel command for {}".format(self.guilds))
-            await self.guilds[message.guild.name].cmdCancel(message, orgMessage) 
-
-          elif myCommand == "!rollback":
-            print("Calling rollback command for {}".format(self.guilds))
-            await self.guilds[message.guild.name].cmdRollback(message, orgMessage)
-
-          elif myCommand == "!close":            
-            print("Calling close command for {}".format(self.guilds))
-            await self.guilds[message.guild.name].cmdClose(message, orgMessage)
-          
           elif myCommand == "!nondkp":
             print("Calling nondkp command for {}".format(self.guilds))
             await self.guilds[message.guild.name].cmdNonDkp(message, orgMessage)
+
+          #Check if role is leadership and if so check for elevated commands
+          elif "leadership" in await self.role.getCharactersMageloRoles(message, myGuildMate):
+            #Check to see if the command is loot
+            if myCommand == "!loot" and len(arrMsg) >= 3:
+              print("Calling loot command for {}".format(self.guilds))
+              await self.guilds[message.guild.name].cmdLoot(message, orgMessage) 
+                
+            elif myCommand == "!cancel":
+              print("Calling cancel command for {}".format(self.guilds))
+              await self.guilds[message.guild.name].cmdCancel(message, orgMessage) 
+
+            elif myCommand == "!rollback":
+              print("Calling rollback command for {}".format(self.guilds))
+              await self.guilds[message.guild.name].cmdRollback(message, orgMessage)
+
+            elif myCommand == "!close":            
+              print("Calling close command for {}".format(self.guilds))
+              await self.guilds[message.guild.name].cmdClose(message, orgMessage)
+          
+
             
 

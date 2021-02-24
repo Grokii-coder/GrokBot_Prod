@@ -71,7 +71,7 @@ class GrokBotCommands(commands.Cog):
                 
     return check 
 
-  async def largeDM(self, ctx, paramMsg):
+  async def largeDM(self, ctx, paramMsg, pChannel=0):
     #Setup variable to hold message under 2000 characters
     myMsg = ""
 
@@ -88,7 +88,10 @@ class GrokBotCommands(commands.Cog):
         #Check to see if this is over 2000
         if len(myTestMsg) > 1999:
           #Current message plus this line is over 2000, send previous
-          await ctx.message.author.send(myMsg)
+          if pChannel==0:
+            await ctx.message.author.send(myMsg)
+          else:
+            await ctx.channel.send(myMsg)
 
           #Start message with current line
           myMsg = aLine
@@ -99,8 +102,10 @@ class GrokBotCommands(commands.Cog):
     #Check to see if any data left in myMsg to send
     if len(myMsg) > 0:
       #Send it
-      await ctx.message.author.send(myMsg)
-        
+      if pChannel==0:
+        await ctx.message.author.send(myMsg)
+      else:
+        await ctx.channel.send(myMsg)
 
   async def parsedArgs(self, ctx):
     #Create local variables for args from context
@@ -142,7 +147,7 @@ class GrokBotCommands(commands.Cog):
       #In guild channel, echo command in this channel and echo the DM
       await ctx.channel.send(msgWithMention, delete_after=120)
       await ctx.message.author.send(myArgMsg, delete_after=120)
-      await ctx.message.delete() 
+      #await ctx.message.delete() 
 
   def isCommandSpam(self, ctx, paramThreshold: typing.Optional[int] = 5):
     #print(self.history)
@@ -202,16 +207,49 @@ class GrokBotCommands(commands.Cog):
         self.history[myAuthor][myServer][myCmd][myCreatedAt] = myFullCmd
     return 0   
 
+  @commands.command(name='roleaudit', aliases=['Roleaudit'], help='TBD')
+  @commands.has_role("leadership")
+  async def botCommand_roleaudit(self, ctx):
+    print("roleaudit cmd")
+    from classes.Role import Role
+    role = Role()
+
+    #myMsg = await role.multiMutuallyExclusive(ctx)
+    #await ctx.channel.send(myMsg)
+
+    myMsg = await role.setManagedRoles(ctx)
+    #await ctx.channel.send(myMsg)
+    await self.largeDM(ctx, myMsg, 1)
+
+
+  @commands.command(name='itemstat', aliases=['Itemstat'], help='TBD')
+  async def botCommand_stat(self, ctx, pName = None):
+    #Check if a character name was sent
+    #Check if this is in #general
+    if self.ignore == ctx.channel.id:
+      myMsg = "Use grok-bot-spam channel instead"
+      await ctx.channel.send(myMsg, delete_after=5)
+      await ctx.message.delete()       
+    elif pName is None:
+      myMsg = "Must enter a character name"
+      await ctx.channel.send(myMsg)
+    else:
+      from classes.Inventory import Inventory     
+      inv = Inventory()
+      myMsg = await inv.getWornItems(pName, 'ATK')
+      await ctx.channel.send(myMsg)
+
   @commands.command(name='spell', aliases=['Spell'], help='TBD')
   async def botCommand_spell(self, ctx, pClass = None):
+    await self.echoCommand(ctx)
     #Check if a character class was sent
     if pClass is None:
       myMsg = "Must enter a character class"
-      print(myMsg)
+      await ctx.channel.send(myMsg)
     #Check if there is at least one attachment
     elif not ctx.message.attachments:
-      myMsg = "No attached character spellbook"
-      print(myMsg)
+      myMsg = "No attached character spellbook.  To generate, in game type:  /outputfile spellbook charnameClassOrWhatever.txt"
+      await ctx.channel.send(myMsg)
     else:
       #Received both a class and an attachment
       #myMsg = "Class {} and attachment".format(pClass)
@@ -230,6 +268,7 @@ class GrokBotCommands(commands.Cog):
       from classes.Everquest import Everquest
       EQ = Everquest()
 
+      print("Parsing spellobok")
       spellbookData = await EQ.parseSpellBook(attachmentData)
       
       #Check if data was parsed
@@ -238,15 +277,18 @@ class GrokBotCommands(commands.Cog):
         print(myMsg)
       else:
         #spellbookData looks good
+        print("Spellbook looks good")
         #Create a spell class object
         from classes.Spell import Spell     
         mySpells = Spell()
 
         #Compare spell data
+        print("Comparing start")
         myMsg = await mySpells.compare(pClass, spellbookData)
+        print("Compare end")
 
-      #Send response as DM
-      await self.largeDM(ctx, myMsg)
+        #Send response as DM
+        await self.largeDM(ctx, myMsg)
       #await ctx.channel.send(myMsg)
 
   @commands.command(name='vt', aliases=['VT', 'Vt'], help='Checks VT Status')
@@ -254,11 +296,14 @@ class GrokBotCommands(commands.Cog):
     if pChar is None:
       print("Must enter a character's name")
     else:
+      await self.echoCommand(ctx)
+
       print(pChar)
       from classes.Inventory import Inventory     
       inv = Inventory()
       myMsg = await inv.VexThalStatus(pChar)
-      await ctx.channel.send(myMsg)
+      #await ctx.channel.send(myMsg)
+      await self.largeDM(ctx, myMsg)
 
   @commands.command(name='find', aliases=['Find'], help='Searches for an item')
   async def botCommand_find(self, ctx, *pItem):    
@@ -352,8 +397,39 @@ class GrokBotCommands(commands.Cog):
   async def botCommand_Needs(self, ctx, pDays: typing.Optional[int] = 30, pEncounter: typing.Optional[str] = ""):
     #Get data from replitDB
     from classes.replitDB import replitDB
-    repDB = replitDB()
+    repDB = replitDB()    
+    
+    #Check if command too spammy
+    numSec = 7
+    if self.isCommandSpam(ctx, numSec):
+      myMsg = "Come on {}, lets give more than {} seconds between commands".format(ctx.message.author.mention, numSec)
+      await ctx.channel.send(myMsg)
+    elif await repDB.getEQGuildName(ctx) is None:
+      #Do nothing
+      pass
+    elif pEncounter == "":
+      myMsg = "No encounter specified for ?needs command"
+      await ctx.channel.send(myMsg)
+    else:
+      #Not spam, echo command 
+      await self.echoCommand(ctx)
 
+      from classes.Flags import Flags
+      myFlags = Flags()
+
+      myDump = await myFlags.getGuildDump(ctx)
+      myMsg = await myFlags.loopNeeds(myDump, pDays, pEncounter)
+      
+      #Send DM to author
+      #await ctx.message.author.send(myMsg) 
+      await self.largeDM(ctx, myMsg, 1)
+
+  @commands.command(name='topten', help='Reviews recent guild dump and top ten encounters needed for the guild or a player')
+  async def botCommand_topten(self, ctx, pDays: typing.Optional[int] = 30, pWhom: typing.Optional[str] = ""):
+    #Get data from replitDB
+    from classes.replitDB import replitDB
+    repDB = replitDB()  
+    
     #Check if command too spammy
     numSec = 7
     if self.isCommandSpam(ctx, numSec):
@@ -363,97 +439,46 @@ class GrokBotCommands(commands.Cog):
       #Do nothing
       pass
     else:
-      #Start the ... typing for the bot in the channel
-      async with ctx.channel.typing():
-        #Not spam, echo command 
-        await self.echoCommand(ctx)
-        
+      #Not spam, echo command 
+      await self.echoCommand(ctx)
 
-              
-        newestDump = await repDB.getGuildProperty(ctx, "NewestGuildDump")        
-        if newestDump is None:
-          myOutput = "No guild dump avaialble, is this a DM channel?"
-          print(myOutput)
-          await ctx.message.author.send(myOutput)
-        else:
-          myDump = newestDump["Data"]
-          myDumpDate = newestDump["MetaData"]["DateTime"]
-          
-          dictOutput = {}
-          #iterate through each character in the dump
-          for aChar in myDump:
-            #Check to see if this character has logged in the last 30 Days
-            if int(myDump[aChar]["DaysSinceLastLogin"]) <= pDays:
-              #Check to see if the character has a PoP flagging dictionary
-              if "PoPFlagsCanDo" in myDump[aChar]:
-                #Check to see if they have done at least hedge pre flag
-                if not "PreFlag Hedge" in myDump[aChar]["PoPFlagsCanDo"]:
-                  #Iterate through this character's flags
-                  for aFlag in myDump[aChar]["PoPFlagsCanDo"]:
-                    #Check to see if this is the encounter we're looking for
-                    if pEncounter.lower() in aFlag.lower() and not "ZoneInto" in aFlag:
-                      #Create output string            
-                      myCharName = aChar
-                      myPlayer = myDump[aChar]["PublicNote"]
-                      myClass = myDump[aChar]["Class"]
-                      myLevel = myDump[aChar]["Level"]
+      from classes.Flags import Flags
+      myFlags = Flags()
 
-                      myLine = "    {}:{} ({} {})\r".format(myPlayer, myCharName, myLevel, myClass)
+      myDump = await myFlags.getGuildDump(ctx)
+      
+      #Check if pWhom is a form of tater tot
+      myTot = ["tot", "tots", "tatertot", "tatertots"]
+      if pWhom.lower() in myTot:
+        pWhom = "TaterTots"
 
-                      #Write to dictOutput
-                      if not aFlag in dictOutput:
-                        tempDict={}
-                        myArr = []
-                        myArr.append(myLine)
-                        tempDict[myPlayer] = myArr                
-                        dictOutput[aFlag] = tempDict
-                      elif not myPlayer in dictOutput[aFlag]:
-                        myArr = []
-                        myArr.append(myLine)
-                        dictOutput[aFlag][myPlayer] = myArr
-                      else:
-                        #Append output string as new element
-                        dictOutput[aFlag][myPlayer].append(myLine)   
-          
-          #Check if there is data in the output                                          
-          if len(dictOutput) == 0:
-            #No data, write an error
-            myOutput = "No characters match the critera"
-            print(myOutput)
-            await ctx.message.author.send(myOutput)
-          else:
-            #Loop through each matching encounter in dictOutput
-            for aFlag in dictOutput:
-              #Create a header for this flag
-              myHeader = "{}\rLogged in within the last {} days from guild dump:  \r".format(aFlag, pDays, myDumpDate)  
+        #Create a role object
+        from classes.Role import Role
+        myRole = Role()
 
-              #Create variables for playerlist, output, and a counter
-              myPlayerList = ""
-              myCharList = ""            
-              myCount = 0
+        #Get list of public notes for role of TaterTots
+        publicNotesRoleTaterTot = await myRole.getPublicNoteOfRole(ctx, pWhom)
 
-              #Loop through each player in dictOutput
-              for aPlayer in sorted(dictOutput[aFlag]):
-                #Build a comma delimited list:  myPlayerList
-                if myCount > 0:
-                  myPlayerList = myPlayerList + ', '
-                myCount = myCount + 1
-                myPlayerList = myPlayerList + aPlayer
+        #Filter myDump for only TaterTots
+        await myFlags.dumpFilterForPublicNote(myDump, publicNotesRoleTaterTot)
+      
+      #Check if nothing sent for pWhom
+      elif pWhom == "":
+        #Don't need to filter anything; the entire guild dump will be used
+        #await ctx.channel.send("Entire Guild!")
+        pass
+      else:
+        #await ctx.channel.send("PublicNote: {}".format(pWhom))
+        #Filter everything out of the guild dump except for the publicNote in pWhom
+        await myFlags.dumpFilterForPublicNote(myDump, [pWhom])
 
-                #Loop through each character in dictOutput  
-                for aChar in sorted(dictOutput[aFlag][aPlayer]):
-                  #Append character name to output
-                  myCharList += aChar
+      myMsg = await myFlags.loopTopTen(myDump, pDays, pWhom)
+      
+      #Send DM to author
+      #await ctx.message.author.send(myMsg)      
+      await self.largeDM(ctx, myMsg, 1)
 
-              #Combine header, the player list, and the list of characters.
-              myOutput = myHeader + myPlayerList + "\r" + myCharList
-
-              #Send DM to author
-              await ctx.message.author.send(myOutput) 
-
-  @commands.command(name='topten', help='Reviews recent guild dump and top ten encounters needed for the guild or a player')
-  #async def botCommand_test(self, ctx, parmDays: typing.Optional[int] = 30, parmPlayer: typing.Optional[str] = None):
-  async def botCommand_topten(self, ctx, pDays: typing.Optional[int] = 30, pWho: typing.Optional[str] = ""):
+  async def botCommand_toptenOLD(self, ctx, pDays: typing.Optional[int] = 30, pWho: typing.Optional[str] = ""):
     #Check if command too spammy
     numSec = 7
     if self.isCommandSpam(ctx, numSec):

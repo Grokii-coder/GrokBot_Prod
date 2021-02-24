@@ -196,9 +196,6 @@ class GrokBot_who():
           #Set Tater if not already
         #Else
           #Set TaterTot if not already
-      
-
-
 
     #Build lists for output message
     msgNoManagedRole = await self.getNoManagedRole()

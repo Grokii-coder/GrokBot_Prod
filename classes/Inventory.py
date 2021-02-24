@@ -7,6 +7,126 @@ class Inventory:
     return "Undefined"
 
 
+  async def parseItemStat(self, pHTML):
+    #split by \n
+    pHTML = pHTML.replace("<br>", "")
+    pHTML = pHTML.replace(": ", ":")
+    pHTML = pHTML.replace("+", "")
+    pHTML = pHTML.replace("%", "")
+    arrHTML = pHTML.split("\n")
+    
+    myReturn = {}
+
+    #Loop through each line
+    for aLine in arrHTML:
+      if ":" in aLine:
+        aLine = aLine.strip()
+        aLine = aLine.replace("+", "")
+
+        #Split line by Pairs
+        arrPair = aLine.split()
+
+        myKey = arrPair[0].split(":")        
+
+        #myIgnore = 'Slot WT Class Race Focus Effect DMG Skill Skill Charges Stringed Brass Wind Percussion All Instruments'
+        myIgnore = ''
+        
+        if not myKey[0] in myIgnore:
+          prepend = ""
+          #Iterate through each pair
+          for aPair in arrPair:
+            arrTerm = aPair.split(":")
+            if len(prepend) == 0:
+              myKey = arrTerm[0]
+            else:
+              myKey = prepend + " " + arrTerm[0]
+              prepend = ""
+
+            if len(arrTerm) > 1:
+              myValue = arrTerm[1]
+              
+              if myValue.isnumeric():                
+                myReturn[myKey] = int(myValue)
+              else:
+                print("My key ({}), My value ({})".format(myKey, myValue))
+            else:
+              myValue = ""
+              prepend = myKey
+    
+    return myReturn        
+
+  async def getWornItems(self, pChar, pStat):
+    #Iterates through a character's worn gear and counts a stat
+    
+    #Setup WFH Magelo object
+    from classes.WFH_Magelo import WFH_Magelo
+    WFH = WFH_Magelo()
+
+    #Get basic data for this character:
+    dictChar = await WFH.getBasicData(pChar)
+
+    #Check if status wasn't normal
+    if not dictChar["MageloStatus"] == "Normal":
+      return "Invalid MageloStatus: {}".format(dictChar["MageloStatus"])
+    
+    myWorn = {}
+    
+    for aItem in dictChar["Items"]:
+      mySlot = int(aItem["SLOT"])
+      #myIcon = aItem["ICON"]
+      myName = aItem["NAME"]
+      #myStack = aItem["STACK"]
+      #myID = aItem["ID"]
+      #myLink = aItem["LINK"]
+      myHTML = aItem["HTML"]
+
+      #Check to see if it is worn item (not ammo)
+      if mySlot in self.ItemSlots["Worn"] and not mySlot == 22:
+        #print("FOUND IT:  {}".format(myName))
+        myItemStat = await self.parseItemStat(myHTML)
+        myWorn[mySlot] = {"NAME" : myName , "Stats" : myItemStat}
+    
+    myAggregate = {}
+    print("Start aggregate")
+    #Loop through each worn item
+    for aSlot in myWorn:
+      print("Slot {}: {}".format(aSlot, myWorn[aSlot]["NAME"]))
+      #Loop through each stat in the item
+      for aStat in myWorn[aSlot]["Stats"]:
+        #Check to see if this stat already in myAggregate
+        if aStat in myAggregate:
+          #Check if stat is added aggregate
+          if aStat == 'Haste':
+            print(myWorn[aSlot]["Stats"][aStat])
+            #Check if current less than new
+            current = myAggregate[aStat]
+            new = myWorn[aSlot]["Stats"][aStat]
+            if current < new:
+              myAggregate[aStat] = new
+          else:
+            myAggregate[aStat] += myWorn[aSlot]["Stats"][aStat]
+        else:
+          myAggregate[aStat] = myWorn[aSlot]["Stats"][aStat]
+
+
+        #print("{}: {}".format(aStat, myWorn[aSlot]["Stats"][aStat]))
+    
+    myMsg = ""
+    for aStat in self.trackedStats:
+      if aStat in myAggregate:
+        thisStat = "{}: {}".format(aStat, myAggregate[aStat])
+
+        if self.trackedStats[aStat] is None:
+          myMsg += thisStat + "\r"
+        else:
+          myMsg += thisStat + " ({})\r".format(self.trackedStats[aStat])
+      else:
+        print(thisStat)
+    
+    if myMsg == "":
+      myMsg = "No worn stats to report"
+    
+    return myMsg
 
   async def VexThalStatus(self, pChar):
     #Setup WFH Magelo object
@@ -31,6 +151,15 @@ class Inventory:
     else:
       myHas = ""
       myNeeds = ""
+
+
+      #Check to see if they have Ring of the Shissar
+      hasRing = 0
+      for aItem in dictChar["Items"]:
+        myName = aItem["NAME"]
+        if myName == 'Ring of the Shissar':
+          hasRing = 1
+
       #Iterate through each item on the character
       for aItem in dictChar["Items"]:
         #mySlot = int(aItem["SLOT"])
@@ -44,7 +173,9 @@ class Inventory:
         print("{}: {}".format(myID, myName))
 
         #Check to see if Ring of the Shissar on keyring
-        if not "Ssraeshza Emperor's Chamber" in dictChar["Major Keys"]: 
+        if not "Ssraeshza Emperor's Chamber" in dictChar["Major Keys"]:
+          #Add check if they have Ring of the Shissar
+
           #Check if this item is in EQ.empKey
           if myID in EQ.empKey:
             #Add to myHas
@@ -60,7 +191,7 @@ class Inventory:
           EQ.VTKey.pop(myID)
 
       #Check to see if Ring of the Shissar on keyring
-      if not "Ssraeshza Emperor's Chamber" in dictChar["Major Keys"]: 
+      if not "Ssraeshza Emperor's Chamber" in dictChar["Major Keys"] and hasRing == 0: 
         for aItem in EQ.empKey:
           #Add to myNeeds
           myNeeds += "  {}\r".format(EQ.empKey[aItem])
@@ -70,8 +201,6 @@ class Inventory:
         myNeeds += "  {}\r".format(EQ.VTKey[aItem])
       
       myMsg = "VT key for {}:\r\rHave\r{}\rNeed\r{}".format(pChar, myHas, myNeeds)
-
-
     return myMsg
 
 
@@ -114,6 +243,32 @@ class Inventory:
 
 
   def __init__(self):
+    self.trackedStats = {
+      "AC" : None
+      , "HP" : None
+      , "MANA" : None
+      , "Endurance" : None
+      , "Mana Regeneration" : 15
+      , "Haste" : None
+      , "Attack" : 250
+      #, "STR" : None
+      #, "STA" : None
+      #, "AGI" : None
+      #, "DEX" : None
+      #, "WIS" : None
+      #, "INT" : None
+      , "CHA" : None
+
+      , "Shielding" : 35
+      , 'Spell Shielding' : 35
+      #DOT?
+      , "Stun Resist" : 35
+      , 'Avoidance' : 100
+
+      , "Strikethrough" : 35
+      , "Accuracy" : 150
+      , 'Combat Effects' : 100
+    }
     self.ItemSlots = {
     "Worn" : {
       0 : "Charm"

@@ -305,48 +305,70 @@ class GrokBot_bidding():
     #Set encounter and raid leader from pMessage object
     myRaidLeader = pMessage["guildmate"]
     myEncounter = pMessage["message"].replace('!nondkp ', '').replace('!nondkp', '')
+    myRollCount = 0
+    myMsg = ""
     
     #Check to see if encounter is blank
     if myEncounter == '':
-      myEncounter = "No Encounter Specified"
+      myEncounter = "nondkploot command error, No Encounter Specified"
+      await self.msgToChannel(self.channel["Bids"], myEncounter, 60)
+    else:
+      #Loop through each voice channel in a guild
+      for aChannel in dMessage.guild.voice_channels:
+        print(aChannel.id, aChannel)
+        import random
 
-    #Loop through each voice channel in a guild
-    for aChannel in dMessage.guild.voice_channels:
-      print(aChannel.id, aChannel)
-      import random
+        #Get channel object by id
+        myChannel = self.bot.get_channel(aChannel.id)
 
-      #Get channel object by id
-      myChannel = self.bot.get_channel(aChannel.id)
+        #Get the number of people are in the channel
+        population = len(myChannel.members)
 
-      #Get the number of people are in the channel
-      population = len(myChannel.members)
+        #Check if population is greater than 1
+        if population > 1:
+          #Found people in a voice channel, increment roll count
+          myRollCount = myRollCount + 1
+          #Get a roll for each discord voice connection
+          rolls = random.sample(range(0, 100), len(myChannel.members))
 
-      #Check if population is greater than 1
-      if population > 1:
-        #Get a roll for each discord voice connection
-        rolls = random.sample(range(0, 100), len(myChannel.members))
+          #Create collection for member and roll
+          dkpRoll = {}
 
-        #Create collection for member and roll
-        dkpRoll = {}
+          #Iterate through members
+          for aMember in myChannel.members:
+            #If nick, use it, otherwise name
+            if aMember.nick is None:
+              myName = aMember.name
+            else:
+              myName = aMember.nick
+            
+            #Assign roll to person
+            dkpRoll[rolls.pop()] = myName
 
-        #Iterate through members
-        for aMember in myChannel.members:
-          #If nick, use it, otherwise name
-          if aMember.nick is None:
-            myName = aMember.name
-          else:
-            myName = aMember.nick
-          
-          #Assign roll to person
-          dkpRoll[rolls.pop()] = myName
+          #Build a message
+          myHeader = "{} - {} - {}\r".format(aChannel, myRaidLeader, myEncounter)
+          await self.msgToChannel(self.channel["Bids"], myHeader)
 
-        #Build a message
-        myMsg = "{} - {} - {}\r".format(aChannel, myRaidLeader, myEncounter)
-        
-        for count, aRoll in enumerate(sorted(dkpRoll, reverse=True)):
-          myMsg += "{}) {} ({})  ".format(count+1, dkpRoll[aRoll],aRoll)
-        
+          for aRoll in dkpRoll:
+            myOneRoll = "{} rolls a {}".format(dkpRoll[aRoll], aRoll)
+            await self.msgToChannel(self.channel["Bids"], myOneRoll)
+
+
+          for count, aRoll in enumerate(sorted(dkpRoll, reverse=True)):
+            myMsg += "{}) {} [{}]  ".format(count+1, dkpRoll[aRoll] ,aRoll)
+            #myMsg += "{}-{}    ".format(aRoll, dkpRoll[aRoll])
+            #myMsg += "{})-{}, ".format(aRoll, dkpRoll[aRoll])
+            #myMsg += "{}) {}  ".format(count+1, dkpRoll[aRoll])
+            #1) huffin (97)  2) Grokii (79)  3) Malk (38)  4) Kohelm (33)  5) Jams (13)
+
+
+      if myRollCount == 0:
+        myMsg = "!nondkp command failed, no one in any voice channels"
+        await self.msgToChannel(self.channel["Bids"], myMsg, 60)
+      else:
         await self.msgToChannel(self.channel["Bids"], myMsg)
+        
+      
 
   async def cmdTest(self, dMessage, pMessage):
 
@@ -539,4 +561,3 @@ class GrokBot_bidding():
     with open("./mp3/open/output.mp3", "wb") as out:
         out.write(response.audio_content)
         print('Audio content written to file "output.mp3"')
-800
