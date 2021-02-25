@@ -232,12 +232,13 @@ class GrokBotCommands(commands.Cog):
       await ctx.message.delete()       
     elif pName is None:
       myMsg = "Must enter a character name"
-      await ctx.channel.send(myMsg)
+      await ctx.channel.send(myMsg, delete_after=120)
     else:
       from classes.Inventory import Inventory     
       inv = Inventory()
       myMsg = await inv.getWornItems(pName, 'ATK')
-      await ctx.channel.send(myMsg)
+      await self.echoCommand(ctx)
+      await self.largeDM(ctx, myMsg)
 
   @commands.command(name='spell', aliases=['Spell'], help='TBD')
   async def botCommand_spell(self, ctx, pClass = None):
@@ -1160,6 +1161,10 @@ class GrokBotCommands(commands.Cog):
     if self.isCommandSpam(ctx, numSec):
       myMsg = "Come on {}, lets give more than {} seconds between commands".format(ctx.message.author.mention, numSec)
       await ctx.channel.send(myMsg)
+    if self.ignore == ctx.channel.id:
+      myMsg = "Use grok-bot-spam channel instead"
+      await ctx.channel.send(myMsg, delete_after=5)
+      await ctx.message.delete()        
     elif await repDB.getEQGuildName(ctx) is None:
       myMsg = "Couldn't get guild name from database"
       print(myMsg)   

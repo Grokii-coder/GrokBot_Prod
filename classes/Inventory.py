@@ -70,7 +70,15 @@ class Inventory:
       return "Invalid MageloStatus: {}".format(dictChar["MageloStatus"])
     
     myWorn = {}
+
+    print(dictChar.keys())
+    myClass = dictChar["Class"]
+    myLevel = dictChar["Level"]
+    myRace = dictChar["Race"]
+    myGuild = dictChar["Guild"]
     
+   
+
     for aItem in dictChar["Items"]:
       mySlot = int(aItem["SLOT"])
       #myIcon = aItem["ICON"]
@@ -111,20 +119,26 @@ class Inventory:
 
         #print("{}: {}".format(aStat, myWorn[aSlot]["Stats"][aStat]))
     
+    myHeader = "{} {} **{}** ({}) <{}>".format(myLevel, myClass, pChar.capitalize(), myRace , myGuild)
+    myHeader += "\rWorn Raw item +stats from gear, no calculation of stat/aa\r\r"
     myMsg = ""
     for aStat in self.trackedStats:
       if aStat in myAggregate:
-        thisStat = "{}: {}".format(aStat, myAggregate[aStat])
-
-        if self.trackedStats[aStat] is None:
-          myMsg += thisStat + "\r"
-        else:
-          myMsg += thisStat + " ({})\r".format(self.trackedStats[aStat])
+        myValue = myAggregate[aStat]
       else:
-        print(thisStat)
+        myValue = 0
+      
+      thisStat = "{} **{}**".format(myValue, aStat)
+
+      if self.trackedStats[aStat] is None:
+        myMsg += thisStat + "\r"
+      else:
+        myMsg += thisStat + " ({})\r".format(self.trackedStats[aStat])
     
     if myMsg == "":
       myMsg = "No worn stats to report"
+
+    myMsg = myHeader + myMsg
     
     return myMsg
 
