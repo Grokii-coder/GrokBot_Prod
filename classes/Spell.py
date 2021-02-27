@@ -1,4 +1,50 @@
 class Spell:
+
+  async def getClasses(self):
+    return self.classes
+
+  async def getCurrentEras(self):
+    return self.era
+
+  async def getUniqueEras(self):
+    uniqueEra = {}
+    for aSpell in self.list:
+      myEra = self.list[aSpell]["Era"]
+      
+      if not myEra in uniqueEra:
+        uniqueEra[myEra] = None
+
+    for aEra in uniqueEra:
+      print(aEra)
+
+    return uniqueEra
+
+  async def getSpellsByClassLevel(self, pClass, pLevel):
+    #Make a complete spell list class and level
+    myList = {}
+    
+    for aSpell in self.list:
+      myClass = self.list[aSpell]["Class"]
+      myName = self.list[aSpell]["Name"]
+      myLevel = self.list[aSpell]["Level"]
+
+      #print(pClass, myClass)
+      if pClass == myClass:
+        print("Is it a match? {}=={}".format(pLevel, myLevel))
+        if int(pLevel) == int(myLevel):
+          print("Yup")
+        else:
+          print("Nope")
+
+      #Check if this spell is for this class and level
+      if pClass == myClass and int(pLevel) == int(myLevel):
+        #print("myKey ({})".format(myKey))
+        howToGet = await self.Preferred(aSpell)
+        myList[myName] = howToGet
+
+    return myList
+
+
   async def compare(self, pClass, pSpellBook):
     #Make sure class has proper capitalization
     pClass=pClass.capitalize()
@@ -61,7 +107,7 @@ class Spell:
       myReturn = "Research {}".format(self.list[pSpell]['Research URL'])
       return myReturn
     if len(self.list[pSpell]['Vendor URL']) > 0:
-      myReturn = "Research {}".format(self.list[pSpell]['Vendor URL'])
+      myReturn = "Vendor {}".format(self.list[pSpell]['Vendor URL'])
       return myReturn
     else:
       return "TBD"
@@ -71,6 +117,38 @@ class Spell:
 #=CONCATENATE(",""",A2,"_",C2,""" : {""Class"" : """, A2, """, """,B$1, """ : """,B2,""", """,C$1, """ : """,C2,""", """,D$1, """ : """,D2,""", """,E$1, """ : """,E2,""", """,F$1, """ : """,F2,""", """,G$1, """ : """,G2,""", """,H$1, """ : """,H2,""", """,I$1, """ : """,I2,""", """,J$1, """ : """,J2,""", """,K$1, """ : """,K2,""", """,L$1, """ : """,L2,""", """,M$1, """ : """,M2,"""}")
 
   def __init__(self):
+    self.classes = ["Bard"
+    , "Beastlord"
+    , "Berserker"
+    , "Cleric"
+    , "Druid"
+    , "Enchanter"
+    , "Magician"
+    , "Monk"
+    , "Necromancer"
+    , "Paladin"
+    , "Ranger"
+    , "Rogue"
+    , "Shadowknight"
+    , "Shaman"
+    , "Warrior"
+    , "Wizard"
+    ]
+
+    self.era = [
+       ""
+      , "Classic"
+      , "Luclin"
+      , "Velious"
+      , "LDoN"
+      , "Ykesha"
+      , "Kunark"
+      , "PoP"
+      , "Planes of Power"
+      , "Legacy of Ykesha"
+      , "LoY"
+    ]
+
     self.list = {
 "Bard_Chant of Battle" : {"Class" : "Bard", "Level" : "1", "Name" : "Chant of Battle", "Mana" : "0", "Skill" : "Percussion_instruments", "Target Type" : "Group", "Era" : "Classic", "PoK Vendor" : "Minstrel Joet", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Bard_Chords of Dissonance" : {"Class" : "Bard", "Level" : "2", "Name" : "Chords of Dissonance", "Mana" : "0", "Skill" : "Stringed_instruments", "Target Type" : "Area of effect around the caster", "Era" : "Classic", "PoK Vendor" : "Minstrel Joet", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
@@ -423,18 +501,18 @@ class Spell:
 ,"Cleric_Imbue Sapphire" : {"Class" : "Cleric", "Level" : "29", "Name" : "Imbue Sapphire", "Mana" : "200", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Classic", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Imbue Topaz" : {"Class" : "Cleric", "Level" : "29", "Name" : "Imbue Topaz", "Mana" : "200", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Classic", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Instill" : {"Class" : "Cleric", "Level" : "29", "Name" : "Instill", "Mana" : "60", "Skill" : "Alteration", "Target Type" : "Single target", "Era" : "Classic", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Amber" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Amber", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Black Pearl" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Black Pearl", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Black Sapphire" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Black Sapphire", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Diamond" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Diamond", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Emerald" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Emerald", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Opal" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Opal", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Peridot" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Peridot", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Plains Pebble" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Plains Pebble", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Rose Quartz" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Rose Quartz", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Ruby" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Ruby", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Sapphire" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Sapphire", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Mass Imbue Topaz" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Topaz", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Amber" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Amber", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Black Pearl" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Black Pearl", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Black Sapphire" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Black Sapphire", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Diamond" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Diamond", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Emerald" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Emerald", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Opal" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Opal", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Peridot" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Peridot", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Plains Pebble" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Plains Pebble", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Rose Quartz" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Rose Quartz", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Ruby" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Ruby", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Sapphire" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Sapphire", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Mass Imbue Topaz" : {"Class" : "Cleric", "Level" : "29", "Name" : "Mass Imbue Topaz", "Mana" : "600", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "Legacy of Ykesha", "PoK Vendor" : "Vicar Thiran", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Panic the Dead" : {"Class" : "Cleric", "Level" : "29", "Name" : "Panic the Dead", "Mana" : "50", "Skill" : "Alteration", "Target Type" : "Undead only", "Era" : "Classic", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Revive" : {"Class" : "Cleric", "Level" : "29", "Name" : "Revive", "Mana" : "300", "Skill" : "Alteration", "Target Type" : "Target's corpse", "Era" : "Classic", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Sermon of the Righteous" : {"Class" : "Cleric", "Level" : "29", "Name" : "Sermon of the Righteous", "Mana" : "100", "Skill" : "Evocation", "Target Type" : "Undead only", "Era" : "Luclin", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
@@ -473,7 +551,7 @@ class Spell:
 ,"Cleric_Sacred Word" : {"Class" : "Cleric", "Level" : "39", "Name" : "Sacred Word", "Mana" : "120", "Skill" : "Evocation", "Target Type" : "Area of effect around the target", "Era" : "Luclin", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Turning of the Unnatural" : {"Class" : "Cleric", "Level" : "39", "Name" : "Turning of the Unnatural", "Mana" : "160", "Skill" : "Evocation", "Target Type" : "Undead only", "Era" : "Velious", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Word of Souls" : {"Class" : "Cleric", "Level" : "39", "Name" : "Word of Souls", "Mana" : "171", "Skill" : "Evocation", "Target Type" : "Area of effect around the caster", "Era" : "Classic", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Temperance" : {"Class" : "Cleric", "Level" : "40", "Name" : "Temperance", "Mana" : "550", "Skill" : "Abjuration", "Target Type" : "Single target", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "https://everquest.allakhazam.com/db/spell.html?spell=3692", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Temperance" : {"Class" : "Cleric", "Level" : "40", "Name" : "Temperance", "Mana" : "550", "Skill" : "Abjuration", "Target Type" : "Single target", "Era" : "Legacy of Ykesha", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "https://everquest.allakhazam.com/db/spell.html?spell=3692", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Banish Undead" : {"Class" : "Cleric", "Level" : "44", "Name" : "Banish Undead", "Mana" : "225", "Skill" : "Evocation", "Target Type" : "Undead only", "Era" : "Classic", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Celestial Healing" : {"Class" : "Cleric", "Level" : "44", "Name" : "Celestial Healing", "Mana" : "225", "Skill" : "Alteration", "Target Type" : "Single target", "Era" : "Velious", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Earthquake" : {"Class" : "Cleric", "Level" : "44", "Name" : "Earthquake", "Mana" : "375", "Skill" : "Evocation", "Target Type" : "Area of effect around the caster", "Era" : "Classic", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
@@ -498,7 +576,7 @@ class Spell:
 ,"Cleric_Ward of the Divine" : {"Class" : "Cleric", "Level" : "50", "Name" : "Ward of the Divine", "Mana" : "277", "Skill" : "Alteration", "Target Type" : "Self only", "Era" : "", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Death Pact" : {"Class" : "Cleric", "Level" : "51", "Name" : "Death Pact", "Mana" : "100", "Skill" : "Abjuration", "Target Type" : "Single target", "Era" : "Kunark", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Dread of Night" : {"Class" : "Cleric", "Level" : "51", "Name" : "Dread of Night", "Mana" : "100", "Skill" : "Alteration", "Target Type" : "Undead only", "Era" : "Kunark", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
-,"Cleric_Pure Blood" : {"Class" : "Cleric", "Level" : "51", "Name" : "Pure Blood", "Mana" : "100", "Skill" : "Alteration", "Target Type" : "Single target", "Era" : "Legacy of Ykesha ", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "https://everquest.allakhazam.com/db/spell.html?spell=3693", "Drop  URL" : "", "Research URL" : ""}
+,"Cleric_Pure Blood" : {"Class" : "Cleric", "Level" : "51", "Name" : "Pure Blood", "Mana" : "100", "Skill" : "Alteration", "Target Type" : "Single target", "Era" : "Legacy of Ykesha", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "https://everquest.allakhazam.com/db/spell.html?spell=3693", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Remedy" : {"Class" : "Cleric", "Level" : "51", "Name" : "Remedy", "Mana" : "175", "Skill" : "Alteration", "Target Type" : "Single target", "Era" : "Kunark", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Sunskin" : {"Class" : "Cleric", "Level" : "51", "Name" : "Sunskin", "Mana" : "120", "Skill" : "Divination", "Target Type" : "Group", "Era" : "Kunark", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}
 ,"Cleric_Epitaph of Life" : {"Class" : "Cleric", "Level" : "52", "Name" : "Epitaph of Life", "Mana" : "275", "Skill" : "Evocation", "Target Type" : "Undead only", "Era" : "Luclin", "PoK Vendor" : "", "Turn In" : "", "Vendor URL" : "", "Quest URL" : "", "Drop  URL" : "", "Research URL" : ""}

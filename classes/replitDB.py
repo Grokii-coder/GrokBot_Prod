@@ -62,6 +62,10 @@ class replitDB:
         if pProperty in db[eqGuild]:
           #Get guild property
           myGuildProperty = db[eqGuild][pProperty]
+        else:
+          #Property does not exist, add it
+          db[eqGuild][pProperty] = {}
+          myGuildProperty = {}
       else:
         #eqGuild not in DB, add it
         db[eqGuild] = {}

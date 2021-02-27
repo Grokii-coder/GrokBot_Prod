@@ -11,31 +11,34 @@ def setup(paramBot):
 
 class GrokBotListening(commands.Cog):
   def __init__(self, paramBot):
-    from classes.Role import Role 
     self.bot = paramBot
+    from classes.Role import Role 
+    from classes.Listener import Listener
     self.role = Role()
+    self.Listener = Listener()    
 
-    from GrokBotClasses.GrokBot_bidding import GrokBot_bidding   
-    self.guilds = {"Potatoville" : GrokBot_bidding()}
-    self.guilds["Potatoville"].setBot(self.bot)
-    self.guilds["Potatoville"].setChannel("inGame", 690269605524013127)
-    self.guilds["Potatoville"].setChannel("Spam", 781591411094454273)
-    self.guilds["Potatoville"].setChannel("Bids", 804445947433975818)
-    self.guilds["Potatoville"].setChannel("History", 804445815124787292)    
+    from classes.Raid import Raid
+
+    self.guilds = {"Potatoville" : Raid()}
+    self.guilds["Potatoville"].bidding.setBot(self.bot)
+    self.guilds["Potatoville"].bidding.setChannel("inGame", 690269605524013127)
+    self.guilds["Potatoville"].bidding.setChannel("Spam", 781591411094454273)
+    self.guilds["Potatoville"].bidding.setChannel("Bids", 804445947433975818)
+    self.guilds["Potatoville"].bidding.setChannel("History", 804445815124787292)    
 
     self.Monitor = {
       "inGame" : [
         #690269605524013127 #Spirit of Potato
-        self.guilds["Potatoville"].getChannel("inGame")
+        self.guilds["Potatoville"].bidding.getChannel("inGame")
         ]
       , "discordChannel" : [
         #804445947433975818 #Spirit of Potato
-        self.guilds["Potatoville"].getChannel("Bids")
+        self.guilds["Potatoville"].bidding.getChannel("Bids")
       ]}
 
   @commands.Cog.listener()
   async def on_message(self, message):
-    import re
+
 
     #Check if the message was NOT made by the bot itself
     #Check if this message is from Nazi Bot
@@ -72,11 +75,9 @@ class GrokBotListening(commands.Cog):
       
       #Check if the message was made to SoP 'in-game-chat' channel id 690269605524013127
       if message.channel.id in self.Monitor["inGame"]:
-        #Parse the name of the person saying the message
-        pattern = "\*\*(.*) guild:\*\* (.*)"
-        result = re.search(pattern, message.content)
-        myGuildMate = result.group(1)
-        myMessage = result.group(2)
+        msgParsed = await self.Listener.parseMessage(message)
+        myGuildMate = msgParsed["GuildMate"]
+        myMessage = msgParsed["Message"]
 
         #Split message by space
         arrMsg = myMessage.split()
@@ -94,7 +95,7 @@ class GrokBotListening(commands.Cog):
         if len(arrMsg) == 1 and arrMsg[0].isdigit():
           print("Calling bid command for {}".format(self.guilds))
           orgMessage["bid"] = arrMsg[0]
-          await self.guilds[message.guild.name].cmdBid(message, orgMessage)
+          await self.guilds[message.guild.name].bidding.cmdBid(message, orgMessage)
         #Check to see if the first character starts with !
         elif myMessage[0] == '!':
           #Set the command name to lowercase and add it to the original message object
@@ -102,32 +103,38 @@ class GrokBotListening(commands.Cog):
           orgMessage["command"] = myCommand
           print("myCommand is ({})".format(myCommand))
 
-          #Check to see if the command is test
+          #Check for test command
           if myCommand == "!test":    
             print("Calling test command for {}".format(self.guilds))           
-            await self.guilds[message.guild.name].cmdTest(message, orgMessage)
+            await self.guilds[message.guild.name].bidding.cmdTest(message, orgMessage)
+          #Check for nondkp command
           elif myCommand == "!nondkp":
             print("Calling nondkp command for {}".format(self.guilds))
-            await self.guilds[message.guild.name].cmdNonDkp(message, orgMessage)
+            await self.guilds[message.guild.name].bidding.cmdNonDkp(message, orgMessage)
 
           #Check if role is leadership and if so check for elevated commands
           elif "leadership" in await self.role.getCharactersMageloRoles(message, myGuildMate):
+            #Check for raid command
+            if myCommand == "!raid":
+              print("Calling loot command for {}".format(self.guilds))
+              await self.guilds[message.guild.name].cmdRaid(message, "EQ") 
+
             #Check to see if the command is loot
             if myCommand == "!loot" and len(arrMsg) >= 3:
               print("Calling loot command for {}".format(self.guilds))
-              await self.guilds[message.guild.name].cmdLoot(message, orgMessage) 
+              await self.guilds[message.guild.name].bidding.cmdLoot(message, orgMessage) 
                 
             elif myCommand == "!cancel":
               print("Calling cancel command for {}".format(self.guilds))
-              await self.guilds[message.guild.name].cmdCancel(message, orgMessage) 
+              await self.guilds[message.guild.name].bidding.cmdCancel(message, orgMessage) 
 
             elif myCommand == "!rollback":
               print("Calling rollback command for {}".format(self.guilds))
-              await self.guilds[message.guild.name].cmdRollback(message, orgMessage)
+              await self.guilds[message.guild.name].bidding.cmdRollback(message, orgMessage)
 
             elif myCommand == "!close":            
               print("Calling close command for {}".format(self.guilds))
-              await self.guilds[message.guild.name].cmdClose(message, orgMessage)
+              await self.guilds[message.guild.name].bidding.cmdClose(message, orgMessage)
           
 
             

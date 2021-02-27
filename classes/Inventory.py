@@ -226,6 +226,9 @@ class Inventory:
     #Get basic data for this character:
     dictChar = await WFH.getBasicData(pChar)
 
+    if type(pItem) is str:
+      pItem = [pItem]
+
     #Check to see if doesn't exist or anon, etc
     if not dictChar["MageloStatus"] == "Normal":
       return "Invalid MageloStatus: {}".format(dictChar["MageloStatus"])
@@ -250,9 +253,12 @@ class Inventory:
         if mySlotName == "Undefined":
           mySlotName = "Slot {} Undefined".format(mySlot)
 
-        if pItem.lower() in myName.lower():
-          thisItem = "{} {}: {} x{}\r".format(pChar, mySlotName, myName, myStack)
-          myMsg += thisItem
+        #Iterate over each item in pItem
+        for aSearchItem in pItem:
+          if aSearchItem.lower() in myName.lower():
+            thisItem = "{} {}: {} x{}\r".format(pChar, mySlotName, myName, myStack)
+            myMsg += thisItem
+
       return myMsg
 
 

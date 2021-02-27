@@ -71,12 +71,15 @@ class GrokBot_who():
       if myMember is None:
         #No member object, format output without link
         myMsg = []
-        await self.outputwhoFlag(None, None, None, myPublicNote, newestDump, myMsg)
+        #await self.outputwhoFlag(None, None, None, myPublicNote, newestDump, myMsg)
+        await self.outputwhoAA(None, None, None, myPublicNote, newestDump, myMsg)
         self.Msg = myMsg[0]
       else:
         #Member object exists, format output with link
         myMsg = []
-        await self.outputwhoFlag(myMember.mention, myMember, myMember.nick, myPublicNote, newestDump, myMsg)
+        #await self.outputwhoFlag(myMember.mention, myMember, myMember.nick, myPublicNote, newestDump, myMsg)
+        await self.outputwhoAA(myMember.mention, myMember, myMember.nick, myPublicNote, newestDump, myMsg)
+
         self.Msg = myMsg[0]
 
   async def outputwho(self, pMention, pName, pNick, pPublicNote, pDump, pMsg):
@@ -100,12 +103,13 @@ class GrokBot_who():
 
     pMsg.append(myMsg)
 
-  async def outputwhoAA(self, pName, pNick, pPublicNote, pDump, pMsg):
+  async def outputwhoAA(self, pMention, pName, pNick, pPublicNote, pDump, pMsg):
     #Check to see if myPublicNote is in pDump
     myTotal = 0
     myMsg = ""    
     for aChar in sorted(pDump["Data"]):
       if pDump["Data"][aChar]["PublicNote"].lower() == pPublicNote.lower():
+        print(pDump["Data"][aChar].keys())
         myLevel = pDump["Data"][aChar]["Level"]
         myClass = pDump["Data"][aChar]["Class"]
         myCount = pDump["Data"][aChar]["aaTotal"]
@@ -113,7 +117,6 @@ class GrokBot_who():
         newTotal = myTotal + myCount
         print("Total {} plus {} equals {}".format(myTotal, myCount, newTotal))
         myTotal += myCount
-
         
         myMsg += "{} (aa{}):  {} {}\r".format(aChar, myCount, myLevel, myClass)
 

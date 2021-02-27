@@ -21,6 +21,37 @@ class GrokBotCommands(commands.Cog):
     self.history = {}
     self.ignore = 510907044513972227
 
+    self.popOrnate = [
+          "Ornate Chain Coif Pattern"
+          ,"Ornate Chain Tunic Pattern"
+          ,"Ornate Chain Sleeve Pattern"
+          ,"Ornate Chain Bracelet Pattern"
+          ,"Ornate Chain Glove Pattern"
+          ,"Ornate Chain Pant Pattern"
+          ,"Ornate Chain Boot Pattern"
+          ,"Ornate Bracer Mold"
+          ,"Ornate Boot Mold"
+          ,"Ornate Helm Mold"
+          ,"Ornate Vambrace Mold"
+          ,"Ornate Greaves Mold"
+          ,"Ornate Gauntlet Mold"
+          ,"Ornate Breastplate Mold"
+          ,"Ornate Leather Helm Pattern"
+          ,"Ornate Leather Tunic Pattern"
+          ,"Ornate Leather Sleeve Pattern"
+          ,"Ornate Leather Wristband Pattern"
+          ,"Ornate Leather Glove Pattern"
+          ,"Ornate Leather Pant Pattern"
+          ,"Ornate Leather Boot Pattern"
+          ,"Ornate Silk Turban Pattern"
+          ,"Ornate Silk Robe Pattern"
+          ,"Ornate Silk Sleeve Pattern"
+          ,"Ornate Silk Bracelet Pattern"
+          ,"Ornate Silk Glove Pattern"
+          ,"Ornate Silk Pant Pattern"
+          ,"Ornate Silk Boot Pattern"
+        ]    
+
 
     self.help = {}
     self.help["needs"] = {"Scope" : "Guild"}
@@ -306,6 +337,93 @@ class GrokBotCommands(commands.Cog):
       #await ctx.channel.send(myMsg)
       await self.largeDM(ctx, myMsg)
 
+  @commands.command(name='spellmule', aliases=['Spellmule'], help='Guild spell mules')
+  async def botCommand_spellmule(self, ctx, pLow = 1, pHigh = 1, pClassOrCmd = "", pMule = ""):
+    print("spellmule enter")
+    from classes.replitDB import replitDB
+    repDB = replitDB()    
+    
+    #Class.... Level
+    #Iterate over spell object for that class and level
+    #Return where to buy or quest for it
+    #If drop/research, then check mule for it
+    #If mule doesn't have, then return where to get it
+
+    #print(len(pItem))
+    #print(pItem[0].lower())
+    #Check if this is in #general
+    if self.ignore == ctx.channel.id:
+      myMsg = "Use grok-bot-spam channel instead"
+      await ctx.channel.send(myMsg, delete_after=5)
+      await ctx.message.delete()
+    elif pClassOrCmd == '' or pClassOrCmd == 'help':
+      myMsg = "?spellmule command help\r\r"
+      myMsg += "Search spell mules for a specific class' level.  Example:  ?spellmule cleric 55\r\r"
+      myMsg += "Flag a character as a spell mule use 'add <charname>'"
+      myMsg += "Unflag a character as a spell mule use 'remove <charname>'"
+      await ctx.channel.send(myMsg)
+    elif pClassOrCmd.lower() == "add":
+      #Get current mules
+      myMules = await repDB.getGuildProperty(ctx, "SpellMules")
+
+      #Check if the mule is in the DB
+      if not pMule.capitalize() in myMules:
+        #Add the mule
+        myMules[pMule.capitalize()] = None
+        await ctx.channel.send("Added a new mule: **{}**".format(pMule.capitalize()))
+        await repDB.setGuildProperty(ctx, "SpellMules", myMules)
+      else:
+        #No need to add
+        await ctx.channel.send("Was already a mule: **{}**".format(pMule.capitalize()))
+    elif pClassOrCmd.lower() == "remove":
+      #Get current mules
+      print("enter remove")
+      myMules = await repDB.getGuildProperty(ctx, "SpellMules")
+
+      #Check if the mule is in the DB
+      if pMule.capitalize() in myMules:
+        #Remove the mule
+        myMules.pop(pMule.capitalize()) 
+        await repDB.setGuildProperty(ctx, "SpellMules", myMules)
+        await ctx.channel.send("Removed mule: **{}**".format(pMule.capitalize()))
+      else:
+        
+        #No need to add
+        await ctx.channel.send("Was not listed as a mule: **{}**".format(pMule.capitalize()))
+    elif pClassOrCmd.lower() == "list":
+      myMules = await repDB.getGuildProperty(ctx, "SpellMules")
+
+
+
+
+      if len(myMules) > 0:
+        await ctx.channel.send("Current mules:  **{}**".format(", ".join(myMules)))
+      else:
+        await ctx.channel.send("No current mules listed")
+    else:
+      from classes.Spell import Spell     
+      mySpells = Spell()
+
+      pClass = pClassOrCmd.capitalize()
+      classList = await mySpells.getClasses()
+      
+
+      if pClass in classList:
+        spellList = await mySpells.getSpellsByClassLevel(pClass, pLow)
+        myMsg = ""
+        for aSpell in spellList:
+          spellName = aSpell.replace("`", "'")
+          howToObtain = spellList[aSpell]
+          if "Turn In" in howToObtain or "Vendor" in howToObtain:
+            howToObtain = "Code spellmule check, spellname strip out tick and backticks during compare"
+          myMsg += "**{}:** {}\r".format(spellName, howToObtain)
+      else:
+        myMsg = "{} is not in {}".format(pClass, " ".join(classList))
+
+      await ctx.channel.send(myMsg)
+      #Get list of mules and break the find command to something callable
+      #Pass list of characters and search value
+
   @commands.command(name='find', aliases=['Find'], help='Searches for an item')
   async def botCommand_find(self, ctx, *pItem):    
     #Check if this is in #general
@@ -313,12 +431,19 @@ class GrokBotCommands(commands.Cog):
       myMsg = "Use grok-bot-spam channel instead"
       await ctx.channel.send(myMsg, delete_after=5)
       await ctx.message.delete() 
-    
-    #Check if no argument was passed to pItem
-    elif len(pItem) == 0:
-      myMsg = "No search parameter passed to '?find' command"
-      await ctx.channel.send(myMsg, delete_after=5)
-      await ctx.message.delete()
+    #Check if no argument was passed to pItem or one argument of help
+    elif len(pItem) == 0 or pItem[0].lower() == 'help':
+      myMsg = "?find command help\r\r"
+      myMsg += "Iterates through all characters in the guild with the publicNote linked to your discord member and searches for any item that contains a partial (or full) match to the search string.\r\r"
+      myMsg += "Example: ?find idol\rWould return any item with the world 'idol' in the name for any of your guild tagged characters\r\r"
+      myMsg += "Guild mules (characters with a public note of 'guild') can be searched by putting the word 'guild' as the first argument\r\r"
+      myMsg += "Example: ?find guild idol\rWould return any item with the world 'idol' in the name for any guild character\r\r"
+      myMsg += "PoP Ornate molds can be searched by on your characters by using the term PoPOrnate\r\r"
+      myMsg += "Example: ?find popornate\rWould return any PoP Ornate pattern or mold for any of your guild tagged characters\r\r"
+
+      await ctx.channel.send(myMsg)
+      #await ctx.message.delete()
+      return
     #Check if one argument passed and it is 'guild'
     elif len(pItem) == 1 and pItem[0].lower() == 'guild':
       myMsg = "No search parameter passed to '?find guild' command"
@@ -334,6 +459,9 @@ class GrokBotCommands(commands.Cog):
 
         #Get the list of guild characters
         charList = await self.getChars(ctx, 1)
+      elif pItem[0].lower() == 'popOrnate'.lower():
+        myItem = self.popOrnate
+        charList = await self.getChars(ctx)
       else:
         charList = await self.getChars(ctx)
         myItem = " ".join(pItem)
@@ -344,6 +472,8 @@ class GrokBotCommands(commands.Cog):
       ignoredChar = []
       myMsg = "Looking for ({}) for the following characters: {}".format(myItem, " ".join(charList))
       await ctx.channel.send(myMsg)
+
+      itemsFound = ""
       for aChar in charList:
         #Use inventory object to search for the item
         myMsg = await inv.findItemByName(aChar, myItem)
@@ -352,10 +482,15 @@ class GrokBotCommands(commands.Cog):
         if "Invalid MageloStatus" in myMsg:
           myMsg = ""
           ignoredChar.append(aChar)
-          
-        if len(myMsg) > 0:
-          await ctx.channel.send(myMsg)
+        elif len(myMsg) > 0:
+          itemsFound += myMsg
+          #await ctx.channel.send(myMsg)
     
+    if len(itemsFound) > 0:
+      await self.largeDM(ctx, itemsFound, 1)
+    else:
+      await ctx.channel.send("No items found\r")
+
     #Check if any characters were ignored
     if len(ignoredChar) > 0:
       myIgnored = " ".join(ignoredChar)
@@ -722,7 +857,7 @@ class GrokBotCommands(commands.Cog):
 
                 #Get Key data
                 await WFH.getKeyData(aChar, dictChar)
-                #await WFH.getAAData(aChar, dictChar)
+                await WFH.getAAData(aChar, dictChar)
                 #await WFH.getSkillData(aChar, dictChar)
 
                 #Add guild dump data to dictChar (overwrite level/class because /roleplaying and /anon)
