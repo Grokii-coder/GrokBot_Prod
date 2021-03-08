@@ -19,28 +19,37 @@ class Spell:
 
     return uniqueEra
 
-  async def getSpellsByClassLevel(self, pClass, pLevel):
+  async def getSpellsByClassLevel(self, pClass, pMin, pMax):
     #Make a complete spell list class and level
     myList = {}
+    print("received {} {}".format(pMin, pMax))
+
+    if pClass == "Bard":
+      itemPrepend = "Song"
+    else:
+      itemPrepend = "Spell"
     
     for aSpell in self.list:
       myClass = self.list[aSpell]["Class"]
       myName = self.list[aSpell]["Name"]
-      myLevel = self.list[aSpell]["Level"]
-
-      #print(pClass, myClass)
-      if pClass == myClass:
-        print("Is it a match? {}=={}".format(pLevel, myLevel))
-        if int(pLevel) == int(myLevel):
-          print("Yup")
-        else:
-          print("Nope")
+      myLevel = int(self.list[aSpell]["Level"])
+      pMin = int(pMin)
+      pMax = int(pMax)
+      
+#      if pClass == myClass:
+#        print("Is it a match? {}: {}".format(myLevel, myName))
+#        if pMin <= myLevel and myLevel <= pMax:
+#          print("Yup it is between {} and {}".format(pMin, pMax))
+#        else:
+#          print("Nope it is not between {} and {}".format(pMin, pMax))
 
       #Check if this spell is for this class and level
-      if pClass == myClass and int(pLevel) == int(myLevel):
+      if pClass == myClass and pMin <= myLevel and myLevel <= pMax:
         #print("myKey ({})".format(myKey))
         howToGet = await self.Preferred(aSpell)
-        myList[myName] = howToGet
+        myItemName = "{}: {}".format(itemPrepend, myName)
+
+        myList[myName] = {"Item" : myItemName, "Level" : myLevel, "How" : howToGet}
 
     return myList
 

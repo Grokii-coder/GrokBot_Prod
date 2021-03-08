@@ -48,21 +48,25 @@ class Flags:
           if not "PreFlag Hedge" in pChars["Data"][aChar]["PoPFlagsCanDo"]:
             #Iterate through this character's flags
             for aFlag in pChars["Data"][aChar]["PoPFlagsCanDo"]:
-              myPublicNote = pChars["Data"][aChar]["PublicNote"]
-              if aFlag in dicTally:
-                #Already in the dictionary, increase the count
-                dicTally[aFlag]["Total"] = 1 + dicTally[aFlag]["Total"]
-                #Check if current publicNotein publicNotes dictionary
-                if myPublicNote in dicTally[aFlag]["PublicNotes"]:
-                  #It is, increment it
-                  dicTally[aFlag]["PublicNotes"][myPublicNote] = 1 + dicTally[aFlag]["PublicNotes"][myPublicNote]
-                else:
-                  #It is not, add it
-                  dicTally[aFlag]["PublicNotes"][myPublicNote] = 1
+              if 'Flag' in aFlag or 'ZoneInto' in aFlag:
+                #Skip because we don't want to report about hails or zoning
+                pass
               else:
-                #Not in the dictionary, add new entry int dicTally
-                dicTally[aFlag] = {"Total" : 1}
-                dicTally[aFlag]["PublicNotes"] = {myPublicNote : 1}
+                myPublicNote = pChars["Data"][aChar]["PublicNote"]
+                if aFlag in dicTally:
+                  #Already in the dictionary, increase the count
+                  dicTally[aFlag]["Total"] = 1 + dicTally[aFlag]["Total"]
+                  #Check if current publicNotein publicNotes dictionary
+                  if myPublicNote in dicTally[aFlag]["PublicNotes"]:
+                    #It is, increment it
+                    dicTally[aFlag]["PublicNotes"][myPublicNote] = 1 + dicTally[aFlag]["PublicNotes"][myPublicNote]
+                  else:
+                    #It is not, add it
+                    dicTally[aFlag]["PublicNotes"][myPublicNote] = 1
+                else:
+                  #Not in the dictionary, add new entry int dicTally
+                  dicTally[aFlag] = {"Total" : 1}
+                  dicTally[aFlag]["PublicNotes"] = {myPublicNote : 1}
     
     #Check that data was found
     if len(dicTally) == 0:
@@ -98,14 +102,12 @@ class Flags:
             #Use myCoutnerList to aggregate total, flag name, and concatenated public note information
             myEncounterList += "{}: **{}**\r    {}\r".format(aTotal, aFlag,publicNotesToString)
     
-    #Build header either for guild or a player
-    myHeader = "Top 10 available backflags for characters in game within " + str(pDays) + " days for "
     if pWho == "":
-      myHeader += "the guild"
-    else:
-      myHeader += pWho 
-    myHeader += "\rGuild Dump ({})\r\r".format(pChars["MetaData"]["DateTime"])
-    
+      pWho = "the guild"
+
+    #Build header either for guild or a player
+    myHeader = "Top 10 avaialble backflags for **{}**.\rCharacters have Hedge PreFlag done and logged in within the last {} days as of guild dump ({}).\r".format(pWho, pDays, pChars["MetaData"]["DateTime"])
+
     myOutput = myHeader + myEncounterList
     print("LoopTopTen End")
     return myOutput
@@ -152,6 +154,7 @@ class Flags:
                   #Append output string as new element
                   dictOutput[aFlag][myPlayer].append(myLine)
     myMsg = await self.formatFlagsNeeds(dictOutput, pDays, pChars["MetaData"]["DateTime"])
+
     return myMsg
 
 
@@ -165,7 +168,7 @@ class Flags:
       #Loop through each matching encounter in pCharFlags
       for aFlag in pCharFlags:
         #Create a header for this flag
-        myHeader = "**{}**\rLogged in within the last {} days from guild dump:  {}\r".format(aFlag, pDays, pDumpDate)
+        myHeader = "**{}**\rHave Hedge PreFlag done and logged in within the last {} days as of guild dump ({}).\r".format(aFlag, pDays, pDumpDate)
 
         #Create variables for playerlist, output, and a counter
         myPlayerList = ""

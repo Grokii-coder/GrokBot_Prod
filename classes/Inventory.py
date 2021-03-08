@@ -217,6 +217,25 @@ class Inventory:
       myMsg = "VT key for {}:\r\rHave\r{}\rNeed\r{}".format(pChar, myHas, myNeeds)
     return myMsg
 
+  async def findItemsOnChars(self, pChars, pItems, ignoredChar):
+
+    itemsFound = []
+    for aChar in pChars:
+      #Use inventory object to search for the item
+      myResponse = await self.findItemByName(aChar, pItems)
+
+      #Check if character was ignored due to character status
+      if myResponse is None:
+        ignoredChar.append(aChar)
+      elif len(myResponse) > 0:
+        for aItem in myResponse:
+          itemsFound.append(aItem)
+    
+    
+    if len(itemsFound) == 0:
+      return None
+    else:
+      return itemsFound
 
   async def findItemByName(self, pChar, pItem):
     #Setup WFH Magelo object
@@ -231,11 +250,12 @@ class Inventory:
 
     #Check to see if doesn't exist or anon, etc
     if not dictChar["MageloStatus"] == "Normal":
-      return "Invalid MageloStatus: {}".format(dictChar["MageloStatus"])
+      return None
     elif not "Items" in dictChar:
-      return "No Items"
+      return {}
     else:
       myMsg = ""
+      myReturn = []
       #Iterate through each item
       for aItem in dictChar["Items"]:
         mySlot = int(aItem["SLOT"])
@@ -255,11 +275,16 @@ class Inventory:
 
         #Iterate over each item in pItem
         for aSearchItem in pItem:
+          #print(pItem)
+          #print(aSearchItem)
+          #print(myName)
           if aSearchItem.lower() in myName.lower():
-            thisItem = "{} {}: {} x{}\r".format(pChar, mySlotName, myName, myStack)
-            myMsg += thisItem
+            #thisItem = "{} {}: {} x{}\r".format(pChar, mySlotName, myName, myStack)
+            #myMsg += thisItem
 
-      return myMsg
+            myReturn.append({"Item" : myName, "Character" : pChar, "SlotName" : mySlotName, "Stack" : myStack})
+
+      return myReturn
 
 
   def __init__(self):

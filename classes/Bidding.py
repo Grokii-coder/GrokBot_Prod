@@ -332,7 +332,7 @@ class Bidding():
           rolls = random.sample(range(0, 100), len(myChannel.members))
 
           #Create collection for member and roll
-          dkpRoll = {}
+          myRoll = {}
 
           #Iterate through members
           for aMember in myChannel.members:
@@ -342,20 +342,21 @@ class Bidding():
             else:
               myName = aMember.nick
             
+            
             #Assign roll to person
-            dkpRoll[rolls.pop()] = myName
+            myRoll[rolls.pop()] = myName
 
           #Build a message
           myHeader = "{} - {} - {}\r".format(aChannel, myRaidLeader, myEncounter)
           await self.msgToChannel(self.channel["Bids"], myHeader)
 
-          for aRoll in dkpRoll:
-            myOneRoll = "{} rolls a {}".format(dkpRoll[aRoll], aRoll)
+          for aRoll in myRoll:
+            myOneRoll = "{} rolls a {}".format(myRoll[aRoll], aRoll)
             await self.msgToChannel(self.channel["Bids"], myOneRoll)
 
 
-          for count, aRoll in enumerate(sorted(dkpRoll, reverse=True)):
-            myMsg += "{}) {} [{}]  ".format(count+1, dkpRoll[aRoll] ,aRoll)
+          for count, aRoll in enumerate(sorted(myRoll, reverse=True)):
+            myMsg += "{}) {} [{}]  ".format(count+1, myRoll[aRoll] ,aRoll)
             #myMsg += "{}-{}    ".format(aRoll, dkpRoll[aRoll])
             #myMsg += "{})-{}, ".format(aRoll, dkpRoll[aRoll])
             #myMsg += "{}) {}  ".format(count+1, dkpRoll[aRoll])

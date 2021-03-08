@@ -62,12 +62,16 @@ class GrokBotListening(commands.Cog):
       #Set channel name      
       if type(message.channel) is discord.channel.DMChannel:
         myChannel = "DM"
+        myChannelID = 0
+        myGuildName = "DM"
       else:
         myChannel = message.channel.name
+        myChannelID = message.channel.id
+        myGuildName = message.guild.name
 
       #Echo message and meta data of message
       myMsg = message.content
-      metaMsg = "({}:{}:{}:{})".format(message.guild.name,message.author,myChannel,message.channel.id)
+      metaMsg = "({}:{}:{}:{})".format(myGuildName, message.author, myChannel,myChannelID)
 
       #echo message
       print(myMsg)
